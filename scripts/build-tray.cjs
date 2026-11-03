@@ -93,6 +93,8 @@ function stageApp() {
   fs.rmSync(stage, { recursive: true, force: true });
   fs.mkdirSync(stage, { recursive: true });
   fs.cpSync(webDist, path.join(stage, 'web'), { recursive: true });
+  fs.rmSync(path.join(stage, 'web', 'download'), { recursive: true, force: true });
+  fs.rmSync(path.join(stage, 'web', 'indir'), { recursive: true, force: true });
   copyFile(path.join(webDist, 'favicon.ico'), path.join(stage, 'orbita.ico'));
   copyFile(
     path.join(sdkRoot, 'lib', 'net462', 'Microsoft.Web.WebView2.Core.dll'),
