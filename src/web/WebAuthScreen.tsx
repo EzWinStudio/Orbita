@@ -194,14 +194,12 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
             <li>
               <ShieldCheck size={16} />
               <span>
-                {IS_TRAY
-                  ? t('Hesap ve veriler yalnızca bu cihazda kalır.')
-                  : t('Hesap ve veriler yalnızca bu tarayıcıda kalır.')}
+                {t('Hesap bu cihazda kalır; eşitleme açıksa yalnızca şifreli kopya gönderilir.')}
               </span>
             </li>
             <li>
               <CloudOff size={16} />
-              <span>{t('Sunucu, e-posta ve bulut yok.')}</span>
+              <span>{t('İsteğe bağlı şifreli eşitleme dışında veri gönderilmez.')}</span>
             </li>
             <li>
               <LockKeyhole size={16} />
@@ -231,7 +229,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                 <p>
                   {isRegister
                     ? account
-                      ? t('Hesap ve veriler yalnızca bu tarayıcıda kalır.')
+                      ? t('Hesap bu cihazda kalır; eşitleme açıksa yalnızca şifreli kopya gönderilir.')
                       : t('Bu cihazda ilk hesabı oluşturuyorsun.')
                     : t('Devam etmek için yerel hesabınla giriş yap.')}
                 </p>

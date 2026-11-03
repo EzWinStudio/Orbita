@@ -26,6 +26,7 @@ import { APP_THEMES } from '../lib/appearance';
 import { fileToAvatarDataUrl } from '../lib/imageFile';
 import { useWebAuth } from './WebAuthGate';
 import { AccountAvatar } from './AccountAvatar';
+import { SyncSettings } from './SyncSettings';
 import type { ClockFormat, Currency, LanguageCode, StartPage } from '../types';
 
 const START_PAGES: { value: StartPage; label: TranslationKey }[] = [
@@ -485,13 +486,7 @@ export function WebSettings() {
           </div>
 
           <p className="setting-note">
-            {IS_TRAY
-              ? t(
-                  'Veriler yalnızca bu cihazda saklanır. Sunucu ve bulut yok; yerel hesap bu cihazda kalır.',
-                )
-              : t(
-                  'Veriler yalnızca bu tarayıcıda saklanır. Sunucu ve bulut yok; yerel hesap bu cihazda kalır.',
-                )}
+            {t('Veriler bu cihazda saklanır; eşitleme açıksa yalnızca şifreli kopya gönderilir.')}
           </p>
           <p className="setting-note">
             {t(
@@ -515,6 +510,8 @@ export function WebSettings() {
             </button>
           </div>
         </section>
+
+        <SyncSettings />
 
         <section className="card settings-wide">
           <div className="card-header">
@@ -593,7 +590,7 @@ export function WebSettings() {
           <div className="setting-row">
             <div className="setting-text">
               <strong>{t('Sürüm')}</strong>
-              <span>{meta?.appVersion ?? '1.4.1'}</span>
+              <span>{meta?.appVersion ?? '1.4.2'}</span>
             </div>
             <span className="web-platform-badge">
               {IS_TRAY ? t('Masaüstü') : t('Web sürümü')}
@@ -613,6 +610,11 @@ export function WebSettings() {
               'Tek kişilik komuta merkezi. Şirket portföyün, finans, görevler ve notlar tek uygulamada; veriler bu cihazda kalır.',
             )}
           </p>
+          {!IS_TRAY ? (
+            <p className="setting-note">
+              {t('Telefonda tarayıcı menüsünden Ana ekrana ekle ile uygulamayı yükleyebilirsin.')}
+            </p>
+          ) : null}
         </section>
 
         <section className="card settings-wide">

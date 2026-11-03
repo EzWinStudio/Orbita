@@ -261,7 +261,7 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
                 {IS_TRAY
                   ? t('Veriler bu cihazda saklanır; API anahtarları Windows DPAPI ile şifrelenir.')
                   : IS_WEB
-                    ? t('Veriler yalnızca bu tarayıcıda saklanır. Sunucu ve bulut yok; yerel hesap bu cihazda kalır.')
+                    ? t('Veriler bu cihazda saklanır; eşitleme açıksa yalnızca şifreli kopya gönderilir.')
                     : t('API anahtarları Windows DPAPI ile şifrelenir; yalnızca bağladığın servislerin API’lerine gönderilir. Uygulama tek kişiliktir, veriler bu bilgisayarda kalır.')}
               </span>
             </div>

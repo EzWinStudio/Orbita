@@ -30,8 +30,8 @@ foreach ($repo in $repos) {
     Remove-Item $zip
 }
 
-$installer = Join-Path $output 'EZWIN-HUB-Tray-Setup-1.0.7.exe'
-$installerUrl = 'https://github.com/EzWinStudio/ezwin-hub-app/releases/download/v1.0.7/EZWIN-HUB-Tray-Setup-1.0.7.exe'
+$installer = Join-Path $output 'EZWIN-HUB-Tray-Setup-1.0.9.exe'
+$installerUrl = 'https://github.com/EzWinStudio/ezwin-hub-app/releases/download/v1.0.9/EZWIN-HUB-Tray-Setup-1.0.9.exe'
 Write-Host 'İndiriliyor: Windows kurulum paketi'
 Invoke-WebRequest -Uri $installerUrl -OutFile $installer
 $hash = (Get-FileHash -Algorithm SHA256 -Path $installer).Hash.ToLower()

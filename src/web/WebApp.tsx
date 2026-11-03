@@ -17,6 +17,7 @@ import { useApp } from '../store';
 import { useI18n } from '../i18n';
 import { IS_TRAY } from '../lib/runtime';
 import { TrayBackgroundAgent } from './TrayBackgroundAgent';
+import { startSyncAgent } from './cloudSync';
 import { PAGE_LABEL, type IntentKind, type NavIntent, type Page } from '../nav';
 
 const QUICK_ACTION_PAGE: Record<IntentKind, Page> = {
@@ -213,6 +214,12 @@ export function WebApp() {
         onQuickAction={quickAction}
       />
       {IS_TRAY ? <TrayBackgroundAgent /> : null}
+      <SyncAgent />
     </div>
   );
+}
+
+function SyncAgent() {
+  useEffect(() => startSyncAgent(), []);
+  return null;
 }

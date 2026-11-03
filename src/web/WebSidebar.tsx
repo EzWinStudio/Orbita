@@ -241,7 +241,7 @@ export function WebSidebar({ page, companyId, navigate, open }: WebSidebarProps)
         >
           <Settings size={17} strokeWidth={1.8} />
           <span>{t('Ayarlar')}</span>
-          <span className="nav-version">v{meta?.appVersion ?? '1.4.1'}</span>
+          <span className="nav-version">v{meta?.appVersion ?? '1.4.2'}</span>
         </button>
         <div className="clock-card">
           <div className="clock-card-top">

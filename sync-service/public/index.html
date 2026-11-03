@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>EZWIN HUB · Eşitleme</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      background: #050807;
+      color: #e8ece9;
+      font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    main { width: min(440px, calc(100% - 32px)); padding: 28px; border: 1px solid #1e2a24; border-radius: 18px; background: #0a0f0c; }
+    h1 { margin: 0 0 8px; font-size: 18px; letter-spacing: -0.02em; }
+    p { margin: 0 0 16px; color: #93a29a; }
+    .state { display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border-radius: 999px; background: #0e1a13; color: #b7f5cd; font: 12px ui-monospace, monospace; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #67f29b; box-shadow: 0 0 14px #67f29b; }
+    small { display: block; margin-top: 18px; color: #637169; font-size: 11.5px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>EZWIN HUB eşitleme servisi</h1>
+    <p>Bu servis yalnızca şifrelenmiş eşitleme paketlerini saklar. İçeriği okuyamaz.</p>
+    <span class="state"><span class="dot"></span><span id="state">Hazır</span></span>
+    <small id="detail">EZWIN HUB uygulaması bu sayfayı arka planda kullanır.</small>
+  </main>
+  <script>
+    (() => {
+      const state = document.getElementById('state');
+      const detail = document.getElementById('detail');
+      const embedded = window.parent !== window;
+
+      function reply(target, requestId, status, body) {
+        if (!target) return;
+        target.postMessage({ type: 'ezwin-sync-result', requestId, status, body }, '*');
+      }
+
+      function ready() {
+        if (!embedded) return;
+        window.parent.postMessage({ type: 'ezwin-sync-ready', origin: location.origin }, '*');
+      }
+
+      async function handle(event) {
+        const data = event.data;
+        if (!data || data.type !== 'ezwin-sync' || typeof data.requestId !== 'string') return;
+        const requestId = data.requestId;
+        try {
+          if (data.action === 'get') {
+            if (typeof data.channel !== 'string' || !/^[A-Za-z0-9_-]{22,64}$/.test(data.channel)) {
+              reply(event.source, requestId, 400, { ok: false, code: 'invalid_channel' });
+              return;
+            }
+            const response = await fetch('/functions/v1/app?channel=' + encodeURIComponent(data.channel), {
+              cache: 'no-store',
+              credentials: 'same-origin',
+            });
+            const body = await response.json().catch(() => null);
+            reply(event.source, requestId, response.status, body ?? { ok: false, code: 'invalid_response' });
+            return;
+          }
+          if (data.action === 'put') {
+            const response = await fetch('/functions/v1/app', {
+              method: 'PUT',
+              cache: 'no-store',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                channel: data.channel,
+                payload: data.payload,
+                expectedVersion: data.expectedVersion,
+                deviceId: data.deviceId,
+              }),
+            });
+            const body = await response.json().catch(() => null);
+            reply(event.source, requestId, response.status, body ?? { ok: false, code: 'invalid_response' });
+            return;
+          }
+          reply(event.source, requestId, 400, { ok: false, code: 'invalid_action' });
+        } catch {
+          reply(event.source, requestId, 503, { ok: false, code: 'sync_unavailable' });
+        }
+      }
+
+      window.addEventListener('message', handle);
+      window.addEventListener('load', ready);
+      if (document.readyState === 'complete') ready();
+      if (!embedded) {
+        state.textContent = 'Hazır';
+        detail.textContent = 'EZWIN HUB uygulaması bu sayfayı arka planda kullanır. Doğrudan açman gerekmez.';
+      }
+    })();
+  </script>
+</body>
+</html>

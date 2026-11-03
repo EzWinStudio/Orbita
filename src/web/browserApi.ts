@@ -25,7 +25,7 @@ const SAVED_AT_KEY = 'ezwin.hub.web.savedAt.v1';
 const RATES_KEY = 'ezwin.hub.web.rates.v1';
 const RATES_URL = 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,EUR';
 const RATES_MAX_AGE = 15 * 60 * 1000;
-const WEB_VERSION = '1.4.1';
+const WEB_VERSION = '1.4.2';
 
 const COMPANY_STATUSES: CompanyStatus[] = ['active', 'maintenance', 'paused'];
 const COMPANY_CATEGORIES: CompanyCategory[] = [
@@ -515,6 +515,36 @@ export function checkpointBrowserSave(): void {
   } catch {
     /* writeState already surfaced the failure */
   }
+}
+
+export function readBrowserState(): AppData {
+  return readState();
+}
+
+export function applySyncedState(raw: unknown): AppData {
+  const local = readState();
+  const remote = normalizeState(raw);
+  const next: AppData = {
+    ...remote,
+    statuses: local.statuses,
+    settings: {
+      ...remote.settings,
+      theme: local.settings.theme,
+      language: local.settings.language,
+      clockFormat: local.settings.clockFormat,
+      showSeconds: local.settings.showSeconds,
+      startPage: local.settings.startPage,
+      maximized: local.settings.maximized,
+      reduceMotion: local.settings.reduceMotion,
+      openAtLogin: local.settings.openAtLogin,
+      autoUpdate: local.settings.autoUpdate,
+      updateFeedUrl: local.settings.updateFeedUrl,
+      lastSeenVersion: local.settings.lastSeenVersion,
+    },
+  };
+  writeState(next);
+  window.dispatchEvent(new CustomEvent<AppData>('ezwin:sync-applied', { detail: next }));
+  return next;
 }
 
 export function applyServiceStatuses(next: Record<string, ServiceStatus>): void {

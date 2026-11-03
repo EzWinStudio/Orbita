@@ -6,12 +6,16 @@ import { WebApp } from './WebApp';
 import { AppProvider } from '../store';
 import { I18nGate } from '../i18n/I18nGate';
 import { applyReduceMotion, applyTheme, storedReduceMotion, storedTheme } from '../lib/appearance';
+import { IS_TRAY } from '../lib/runtime';
+import { registerServiceWorker } from './pwa';
 import '../styles.css';
 import '../styles-web.css';
 
 installBrowserApi();
 applyTheme(storedTheme());
 applyReduceMotion(storedReduceMotion());
+document.documentElement.dataset.host = IS_TRAY ? 'tray' : 'web';
+registerServiceWorker();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Kök eleman bulunamadı');

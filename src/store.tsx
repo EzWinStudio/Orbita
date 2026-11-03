@@ -284,6 +284,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     applyReduceMotion(Boolean(data.settings.reduceMotion), true);
   }, [data?.settings.theme, data?.settings.reduceMotion]);
 
+  useEffect(() => {
+    const onSynced = (event: Event) => {
+      const next = (event as CustomEvent<AppData>).detail;
+      if (next) setData(next);
+    };
+    window.addEventListener('ezwin:sync-applied', onSynced);
+    return () => window.removeEventListener('ezwin:sync-applied', onSynced);
+  }, []);
+
   const refreshRates = useCallback(async (force = false) => {
     const api = window.ezwin;
     if (!api) return;
