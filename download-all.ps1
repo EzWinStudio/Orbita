@@ -35,7 +35,7 @@ $installerUrl = 'https://github.com/EzWinStudio/ezwin-hub-app/releases/download/
 Write-Host 'İndiriliyor: Windows kurulum paketi'
 Invoke-WebRequest -Uri $installerUrl -OutFile $installer
 $hash = (Get-FileHash -Algorithm SHA256 -Path $installer).Hash.ToLower()
-if ($hash -ne 'bf9e9b66cee91f1345c428133c5bfcf0ff385e96f0256c69edd75733f99e43b1') {
+if ($hash -ne '3f65c98f34390a075146c48869e1bee31d39924fcab419812c07c2b40da588be') {
     throw "Kurulum paketi doğrulanamadı: $hash"
 }
 
