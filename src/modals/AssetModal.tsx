@@ -197,7 +197,7 @@ export function AssetModal({ open, onClose, asset, defaultCompanyId }: AssetModa
               : t('Servisler envanter olarak listelenir; canlı API kontrolü yapılmaz.')
             : asset
               ? t('Bağlantı bilgilerini güncelle. Anahtarı boş bırakırsan mevcut anahtar korunur.')
-              : t('Gerçek API bağlantısı kur; EZWIN HUB verileri doğrudan kaynaktan çeker.')
+              : t('Gerçek API bağlantısı kur; Orbita verileri doğrudan kaynaktan çeker.')
       }
       onClose={onClose}
       size="md"

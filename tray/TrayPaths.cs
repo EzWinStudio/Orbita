@@ -12,6 +12,7 @@ namespace Ezwin.Hub.Tray
         {
             get
             {
+                // Eski EZWIN HUB verisi (WebView2 profili, DPAPI sırları) burada kalır.
                 return Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "EZWIN HUB Tray");

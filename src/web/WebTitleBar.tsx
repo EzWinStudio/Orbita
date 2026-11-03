@@ -31,7 +31,7 @@ export function WebTitleBar({
         >
           <Menu size={17} />
         </button>
-        <span className="titlebar-brand">EZWIN HUB</span>
+        <span className="titlebar-brand">ORBITA</span>
         <span className="web-badge">{IS_TRAY ? t('Masaüstü') : 'WEB'}</span>
         <span className="titlebar-sep" />
         <span className="titlebar-page">{label ?? t(PAGE_LABEL[page])}</span>

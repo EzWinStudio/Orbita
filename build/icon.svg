@@ -1,28 +1,27 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="glow" cx="0.28" cy="0.18" r="0.9">
+    <radialGradient id="glow" cx="0.34" cy="0.22" r="0.92">
       <stop offset="0" stop-color="#0d2a22"/>
       <stop offset="0.55" stop-color="#07110d"/>
       <stop offset="1" stop-color="#040806"/>
     </radialGradient>
-    <linearGradient id="mint" x1="312" y1="300" x2="720" y2="740" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#8dffd9"/>
+    <linearGradient id="mint" x1="276" y1="300" x2="760" y2="748" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b7ffe4"/>
       <stop offset="0.5" stop-color="#3ef2b5"/>
       <stop offset="1" stop-color="#16b584"/>
     </linearGradient>
     <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="26"/>
+      <feGaussianBlur stdDeviation="30"/>
     </filter>
   </defs>
   <rect width="1024" height="1024" rx="236" fill="url(#glow)"/>
   <rect x="8" y="8" width="1008" height="1008" rx="230" stroke="white" stroke-opacity="0.08" stroke-width="4"/>
-  <circle cx="512" cy="512" r="300" fill="#3ef2b5" fill-opacity="0.1" filter="url(#soft)"/>
-  <g>
-    <path d="M318 306H654L696 366H360L318 306Z" fill="url(#mint)"/>
-    <path d="M356 414H636L678 474H398L356 414Z" fill="url(#mint)" fill-opacity="0.92"/>
-    <path d="M394 522H604L646 582H436L394 522Z" fill="url(#mint)" fill-opacity="0.84"/>
-    <path d="M318 678H560V738H318V678Z" fill="url(#mint)"/>
-    <path d="M690 404V718H630V474L690 404Z" fill="url(#mint)" fill-opacity="0.55"/>
+  <circle cx="512" cy="512" r="316" fill="#3ef2b5" fill-opacity="0.09" filter="url(#soft)"/>
+  <g transform="rotate(-26 512 512)">
+    <ellipse cx="512" cy="512" rx="336" ry="204" stroke="url(#mint)" stroke-width="46"/>
   </g>
-  <circle cx="742" cy="294" r="30" fill="#3ef2b5"/>
+  <circle cx="512" cy="512" r="128" stroke="#eafff7" stroke-opacity="0.92" stroke-width="40"/>
+  <circle cx="512" cy="512" r="56" fill="url(#mint)"/>
+  <circle cx="790" cy="334" r="92" fill="#3ef2b5" fill-opacity="0.22" filter="url(#soft)"/>
+  <circle cx="790" cy="334" r="38" fill="#c9ffe9"/>
 </svg>

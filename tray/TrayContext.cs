@@ -34,7 +34,7 @@ namespace Ezwin.Hub.Tray
             showEvent = showEventHandle;
 
             menu = new ContextMenuStrip();
-            openItem = new ToolStripMenuItem("EZWIN HUB'ı aç");
+            openItem = new ToolStripMenuItem("Orbita'yı aç");
             openItem.Font = new Font(openItem.Font, FontStyle.Bold);
             openItem.Click += delegate { ShowWindow(); };
 
@@ -76,7 +76,7 @@ namespace Ezwin.Hub.Tray
             folderItem = new ToolStripMenuItem("Yedek klasörünü aç");
             folderItem.Click += delegate { OpenBackupFolder(); };
 
-            browserItem = new ToolStripMenuItem("Tarayıcı sürümünü aç");
+            browserItem = new ToolStripMenuItem("Web sürümünü aç");
             browserItem.Click += delegate { OpenBrowserVersion(); };
 
             exitItem = new ToolStripMenuItem("Çıkış");
@@ -105,7 +105,7 @@ namespace Ezwin.Hub.Tray
 
             tray = new NotifyIcon();
             tray.Icon = LoadTrayIcon();
-            tray.Text = "EZWIN HUB · Arka planda";
+            tray.Text = "Orbita · Arka planda";
             tray.Visible = true;
             tray.ContextMenuStrip = menu;
             tray.DoubleClick += delegate { ShowWindow(); };
@@ -173,7 +173,7 @@ namespace Ezwin.Hub.Tray
             {
                 tray.ShowBalloonTip(
                     4500,
-                    "EZWIN HUB arka planda",
+                    "Orbita arka planda",
                     "Uygulama arka planda çalışmaya devam ediyor. Açmak için simgeye çift tıkla.",
                     ToolTipIcon.None);
             }
@@ -243,7 +243,7 @@ namespace Ezwin.Hub.Tray
         {
             try
             {
-                Process.Start(new ProcessStartInfo("https://ezwin-hub.wasmer.app")
+                Process.Start(new ProcessStartInfo("https://orbita.wasmer.app")
                 {
                     UseShellExecute = true,
                 });
@@ -271,7 +271,7 @@ namespace Ezwin.Hub.Tray
         {
             try
             {
-                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ezwin.ico");
+                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "orbita.ico");
                 if (File.Exists(path)) return new Icon(path, 16, 16);
             }
             catch

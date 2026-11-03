@@ -2,29 +2,32 @@
 Unicode true
 
 !ifndef VERSION
-  !define VERSION "1.0.7"
+  !define VERSION "2.0.0"
 !endif
 !ifndef VERSION4
-  !define VERSION4 "1.0.7.0"
+  !define VERSION4 "2.0.0.0"
 !endif
 !ifndef SRCDIR
   !define SRCDIR "..\release-artifacts-tray\app"
 !endif
 !ifndef OUTFILE
-  !define OUTFILE "..\release-artifacts-tray\EZWIN-HUB-Tray-Setup-${VERSION}.exe"
+  !define OUTFILE "..\release-artifacts-tray\Orbita-Setup-${VERSION}.exe"
 !endif
 !ifndef ICONFILE
-  !define ICONFILE "..\release-artifacts-tray\app\ezwin.ico"
+  !define ICONFILE "..\release-artifacts-tray\app\orbita.ico"
 !endif
 
-!define APPNAME "EZWIN HUB Tray"
-!define APPEXE "EZWIN HUB Tray.exe"
-!define UNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\EZWINHUBTray"
+!define APPNAME "Orbita"
+!define APPEXE "Orbita.exe"
+!define UNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\OrbitaTray"
+!define LEGACYAPPNAME "EZWIN HUB Tray"
+!define LEGACYAPPEXE "EZWIN HUB Tray.exe"
+!define LEGACYUNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\EZWINHUBTray"
 
 Name "${APPNAME} ${VERSION}"
 OutFile "${OUTFILE}"
-InstallDir "$LOCALAPPDATA\Programs\EZWIN HUB Tray"
-InstallDirRegKey HKCU "Software\EZWIN\HUB Tray" "InstallDir"
+InstallDir "$LOCALAPPDATA\Programs\Orbita"
+InstallDirRegKey HKCU "Software\Orbita\Tray" "InstallDir"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
 ManifestDPIAware true
@@ -43,8 +46,8 @@ VIAddVersionKey "LegalCopyright" "© 2026 EZWIN"
 !define MUI_ICON "${ICONFILE}"
 !define MUI_UNICON "${ICONFILE}"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APPEXE}"
-!define MUI_FINISHPAGE_RUN_TEXT "EZWIN HUB Tray'i şimdi aç"
-!define MUI_FINISHPAGE_TEXT "EZWIN HUB Tray tepside çalışır ve arka plan kontrollerini sürdürür.$\r$\n$\r$\nWindows ile başlatma varsayılan olarak açıldı. Tepsi menüsünden değiştirebilirsin."
+!define MUI_FINISHPAGE_RUN_TEXT "Orbita'yı şimdi aç"
+!define MUI_FINISHPAGE_TEXT "Orbita tepside çalışır ve arka plan kontrollerini sürdürür.$\r$\n$\r$\nWindows ile başlatma varsayılan olarak açıldı. Tepsi menüsünden değiştirebilirsin. Verilerin ve yedeklerin korunur."
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
@@ -54,12 +57,20 @@ VIAddVersionKey "LegalCopyright" "© 2026 EZWIN"
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "Turkish"
 
-BrandingText "EZWIN · ezwinstudio"
+BrandingText "Orbita · EZWIN Studio"
 
 Section "Kurulum" SEC_MAIN
   SetShellVarContext current
   nsExec::ExecToLog 'taskkill /F /IM "${APPEXE}"'
   Pop $0
+  nsExec::ExecToLog 'taskkill /F /IM "${LEGACYAPPEXE}"'
+  Pop $0
+
+  ; Önceki EZWIN HUB Tray kurulumunu sessizce kaldır; veri klasörlerine dokunmaz.
+  IfFileExists "$LOCALAPPDATA\Programs\${LEGACYAPPNAME}\Uninstall ${LEGACYAPPNAME}.exe" 0 legacy_done
+    nsExec::ExecToLog '"$LOCALAPPDATA\Programs\${LEGACYAPPNAME}\Uninstall ${LEGACYAPPNAME}.exe" /S'
+    Pop $0
+  legacy_done:
 
   SetOutPath "$INSTDIR"
   File /r "${SRCDIR}\*.*"
@@ -70,8 +81,9 @@ Section "Kurulum" SEC_MAIN
   CreateShortCut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\${APPEXE}" "" "$INSTDIR\${APPEXE}" 0
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Kaldır.lnk" "$INSTDIR\Uninstall ${APPNAME}.exe"
 
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "EZWIN HUB Tray" '"$INSTDIR\${APPEXE}" --background'
-  WriteRegStr HKCU "Software\EZWIN\HUB Tray" "InstallDir" "$INSTDIR"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Orbita" '"$INSTDIR\${APPEXE}" --background'
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "EZWIN HUB Tray"
+  WriteRegStr HKCU "Software\Orbita\Tray" "InstallDir" "$INSTDIR"
 
   WriteRegStr HKCU "${UNINSTKEY}" "DisplayName" "${APPNAME}"
   WriteRegStr HKCU "${UNINSTKEY}" "DisplayVersion" "${VERSION}"
@@ -82,6 +94,10 @@ Section "Kurulum" SEC_MAIN
   WriteRegStr HKCU "${UNINSTKEY}" "QuietUninstallString" '"$INSTDIR\Uninstall ${APPNAME}.exe" /S'
   WriteRegDWORD HKCU "${UNINSTKEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNINSTKEY}" "NoRepair" 1
+
+  ; Eski kayıtlar kaldırıldıysa artık kalmasın.
+  DeleteRegKey HKCU "${LEGACYUNINSTKEY}"
+  DeleteRegValue HKCU "Software\EZWIN\HUB Tray" "InstallDir"
 SectionEnd
 
 Section "Uninstall"
@@ -94,9 +110,9 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\${APPNAME}\Kaldır.lnk"
   RMDir "$SMPROGRAMS\${APPNAME}"
 
-  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "EZWIN HUB Tray"
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Orbita"
   DeleteRegKey HKCU "${UNINSTKEY}"
-  DeleteRegValue HKCU "Software\EZWIN\HUB Tray" "InstallDir"
+  DeleteRegValue HKCU "Software\Orbita\Tray" "InstallDir"
 
   SetOutPath "$TEMP"
   RMDir /r "$INSTDIR"

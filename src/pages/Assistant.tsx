@@ -56,7 +56,7 @@ export function Assistant({ navigate }: AssistantProps) {
       id: 1,
       role: 'assistant',
       content:
-        'Merhaba, ben **EZWIN Asistan**. Uygulamanı yönetebilir, verilerini özetleyebilir ve genel sorularını yanıtlayabilirim.\n\nNe yapmak istersin?',
+        'Merhaba, ben **Orbita Asistan**. Uygulamanı yönetebilir, verilerini özetleyebilir ve genel sorularını yanıtlayabilirim.\n\nNe yapmak istersin?',
       source: 'local',
       suggestions: STARTERS.slice(0, 4),
     },
@@ -132,7 +132,7 @@ export function Assistant({ navigate }: AssistantProps) {
         id: Date.now(),
         role: 'assistant',
         content:
-          'Sohbet temizlendi. **EZWIN Asistan** hazır: özet isteyebilir, kayıt ekleyebilir veya genel bir soru sorabilirsin.',
+          'Sohbet temizlendi. **Orbita Asistan** hazır: özet isteyebilir, kayıt ekleyebilir veya genel bir soru sorabilirsin.',
         source: 'local',
         suggestions: STARTERS.slice(0, 4),
       },

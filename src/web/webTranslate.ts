@@ -106,7 +106,7 @@ export async function translateTextWeb(input: {
   if (clean.length > MAX_LENGTH) throw new Error('Metin 5000 karakteri aşamaz.');
   if (!isTranslateLanguage(input.source)) throw new Error('Kaynak dil geçersiz.');
   if (!isTranslateLanguage(input.target)) throw new Error('Hedef dil geçersiz.');
-  if (input.source === input.target) return { text: clean, engine: 'EZWIN' };
+  if (input.source === input.target) return { text: clean, engine: 'Orbita' };
 
   const key = `${input.source}|${input.target}|${clean}`;
   const cached = cache.get(key);

@@ -150,7 +150,7 @@ export function Updates() {
                 className="input"
                 value={feed}
                 onChange={(event) => setFeed(event.target.value)}
-                placeholder="https://ornek.com/ezwin-hub/update.json"
+                placeholder="https://ornek.com/orbita/update.json"
                 spellCheck={false}
               />
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => void saveFeed()} disabled={busy === 'feed'}>

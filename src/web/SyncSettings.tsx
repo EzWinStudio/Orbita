@@ -172,7 +172,7 @@ export function SyncSettings() {
           <div className="sync-code-row">
             <span className="sync-code-label">{t('Eşitleme kodu')}</span>
             <code className="sync-code" dir="ltr">
-              {reveal ? code : 'EZWIN-•••••-•••••-•••••-•••••-••••••'}
+              {reveal ? code : 'ORBITA-•••••-•••••-•••••-•••••-••••••'}
             </code>
             <button
               type="button"

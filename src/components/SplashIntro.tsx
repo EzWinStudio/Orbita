@@ -5,10 +5,10 @@ import { LogoMark } from './Logo';
  * azaltma tercihi açıksa CSS tarafında sadeleşir.
  */
 export function SplashIntro({ leaving }: { leaving: boolean }) {
-  const letters = 'EZWIN HUB'.split('');
+  const letters = 'ORBITA'.split('');
 
   return (
-    <div className={`intro${leaving ? ' intro-leaving' : ''}`} role="status" aria-label="EZWIN HUB açılıyor">
+    <div className={`intro${leaving ? ' intro-leaving' : ''}`} role="status" aria-label="Orbita açılıyor">
       <div className="intro-aurora" aria-hidden="true" />
       <div className="intro-mark" aria-hidden="true">
         <span className="intro-ring intro-ring-1" />

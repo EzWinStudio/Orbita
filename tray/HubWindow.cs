@@ -39,7 +39,7 @@ namespace Ezwin.Hub.Tray
         public HubWindow(bool hidden)
         {
             startHidden = hidden;
-            Text = "EZWIN HUB";
+            Text = "Orbita";
             AutoScaleMode = AutoScaleMode.None;
             Rectangle work = Screen.PrimaryScreen.WorkingArea;
             Width = Math.Max(980, Math.Min(1600, work.Width - 80));
@@ -49,7 +49,7 @@ namespace Ezwin.Hub.Tray
             BackColor = Color.FromArgb(5, 8, 7);
             try
             {
-                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ezwin.ico");
+                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "orbita.ico");
                 if (File.Exists(iconPath)) Icon = new Icon(iconPath, 32, 32);
             }
             catch
@@ -209,9 +209,9 @@ namespace Ezwin.Hub.Tray
             {
                 TrayPaths.Log("init failed: " + error);
                 MessageBox.Show(
-                    "EZWIN HUB arayüzü başlatılamadı.\r\n\r\n" + error.Message +
+                    "Orbita arayüzü başlatılamadı.\r\n\r\n" + error.Message +
                     "\r\n\r\nMicrosoft Edge WebView2 Runtime gerekli olabilir. Windows Update veya Microsoft'un WebView2 indirme sayfasından kurabilirsin.",
-                    "EZWIN HUB Tray",
+                    "Orbita",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
@@ -592,7 +592,7 @@ namespace Ezwin.Hub.Tray
                 try
                 {
                     TrayPaths.EnsureBackupRoot();
-                    path = Path.Combine(TrayPaths.BackupRoot, "ezwin-hub-yedek-" + date + ".json");
+                    path = Path.Combine(TrayPaths.BackupRoot, "orbita-yedek-" + date + ".json");
                     File.WriteAllText(path, payload, new UTF8Encoding(false));
                     PruneBackups();
                     TrayPaths.Log("backup saved: " + date + " " + payload.Length + " bytes");
@@ -630,7 +630,18 @@ namespace Ezwin.Hub.Tray
 
         private static void PruneBackups()
         {
-            string[] files = Directory.GetFiles(TrayPaths.BackupRoot, "ezwin-hub-yedek-*.json");
+            string pattern = "*.json";
+            List<string> matched = new List<string>();
+            foreach (string file in Directory.GetFiles(TrayPaths.BackupRoot, pattern))
+            {
+                string name = Path.GetFileName(file);
+                if (name.StartsWith("orbita-yedek-", StringComparison.OrdinalIgnoreCase) ||
+                    name.StartsWith("ezwin-hub-yedek-", StringComparison.OrdinalIgnoreCase))
+                {
+                    matched.Add(file);
+                }
+            }
+            string[] files = matched.ToArray();
             Array.Sort(files, delegate(string left, string right)
             {
                 return File.GetLastWriteTimeUtc(right).CompareTo(File.GetLastWriteTimeUtc(left));

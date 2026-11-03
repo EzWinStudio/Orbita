@@ -16,6 +16,7 @@ import { Translate } from '../pages/Translate';
 import { useApp } from '../store';
 import { useI18n } from '../i18n';
 import { IS_TRAY } from '../lib/runtime';
+import { PRODUCT_NAME } from '../lib/product';
 import { TrayBackgroundAgent } from './TrayBackgroundAgent';
 import { startSyncAgent } from './cloudSync';
 import { PAGE_LABEL, type IntentKind, type NavIntent, type Page } from '../nav';
@@ -101,7 +102,7 @@ export function WebApp() {
     const label = activePage === 'company'
       ? data.companies.find((company) => company.id === companyId)?.name
       : t(PAGE_LABEL[activePage]);
-    document.title = label ? `EZWIN HUB · ${label}` : 'EZWIN HUB';
+    document.title = label ? `${PRODUCT_NAME} · ${label}` : PRODUCT_NAME;
   }, [activePage, companyId, data, t]);
 
   if (loading) {
@@ -122,7 +123,7 @@ export function WebApp() {
         <div className="fatal-card">
           <span className="fatal-icon"><AlertTriangle size={20} /></span>
           <LogoMark size={34} />
-          <h1>{t('EZWIN HUB başlatılamadı')}</h1>
+          <h1>{t('Orbita başlatılamadı')}</h1>
           <p>{fatalError ?? t('Veriler yüklenemedi. Uygulamayı yeniden başlatmayı dene.')}</p>
           <button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>
             <RotateCw size={15} /> {t('Yeniden dene')}

@@ -6,9 +6,11 @@ namespace Ezwin.Hub.Tray
 {
     internal static class NativeSettings
     {
-        private const string SettingsKey = "Software\\EZWIN\\HUB Tray";
+        private const string SettingsKey = "Software\\Orbita\\Tray";
+        private const string LegacySettingsKey = "Software\\EZWIN\\HUB Tray";
         private const string RunKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-        private const string RunValue = "EZWIN HUB Tray";
+        private const string RunValue = "Orbita";
+        private const string LegacyRunValue = "EZWIN HUB Tray";
 
         public static bool Notifications
         {
@@ -32,6 +34,8 @@ namespace Ezwin.Hub.Tray
                     {
                         if (key == null) return false;
                         string value = key.GetValue(RunValue) as string;
+                        if (string.IsNullOrWhiteSpace(value))
+                            value = key.GetValue(LegacyRunValue) as string;
                         return !string.IsNullOrWhiteSpace(value);
                     }
                 }
@@ -58,6 +62,7 @@ namespace Ezwin.Hub.Tray
                     {
                         key.DeleteValue(RunValue, false);
                     }
+                    key.DeleteValue(LegacyRunValue, false);
                 }
             }
             catch (Exception error)
@@ -72,8 +77,12 @@ namespace Ezwin.Hub.Tray
             {
                 using (RegistryKey key = Registry.CurrentUser.OpenSubKey(SettingsKey, false))
                 {
-                    if (key == null) return fallback;
-                    object value = key.GetValue(name);
+                    object value = key == null ? null : key.GetValue(name);
+                    if (value is int) return (int)value;
+                }
+                using (RegistryKey legacy = Registry.CurrentUser.OpenSubKey(LegacySettingsKey, false))
+                {
+                    object value = legacy == null ? null : legacy.GetValue(name);
                     return value is int ? (int)value : fallback;
                 }
             }

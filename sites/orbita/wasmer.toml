@@ -1,0 +1,10 @@
+[package]
+name = "ezwinstudio/orbita"
+version = "1.0.0"
+description = "Orbita — browser-based local company command center"
+
+[dependencies]
+"wasmer/static-web-server" = "^1"
+
+[fs]
+"/public" = "public"

@@ -1,10 +1,12 @@
 import type { AppData, Settings } from '../types';
 import { applySyncedState, onBrowserSave, readBrowserState } from './browserApi';
+import { PRODUCT_NAME } from '../lib/product';
 
 export const SYNC_ORIGIN = 'https://ezwin-hub-sync-qa7ckgs962s.qoder.website';
 const CONFIG_KEY = 'ezwin.hub.web.sync.v1';
 const BACKUP_KEY = 'ezwin.hub.web.sync.backup.v1';
-const CODE_PREFIX = 'EZWIN';
+const CODE_PREFIX = 'ORBITA';
+const LEGACY_CODE_PREFIX = 'EZWIN';
 const CODE_LENGTH = 26;
 const BASE32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const AAD_PREFIX = 'EZWINHUB1:';
@@ -173,6 +175,11 @@ function normalizeCode(input: string): string | null {
   let clean = input.toUpperCase().replace(/[^0-9A-Z]/g, '');
   if (clean.length >= CODE_PREFIX.length + CODE_LENGTH && clean.startsWith(CODE_PREFIX)) {
     clean = clean.slice(CODE_PREFIX.length);
+  } else if (
+    clean.length >= LEGACY_CODE_PREFIX.length + CODE_LENGTH &&
+    clean.startsWith(LEGACY_CODE_PREFIX)
+  ) {
+    clean = clean.slice(LEGACY_CODE_PREFIX.length);
   }
   clean = clean.replace(/[ILO]/g, (char) => (char === 'O' ? '0' : '1'));
   if (clean.length < CODE_LENGTH) return null;
@@ -373,7 +380,7 @@ function ensureFrame(): Promise<void> {
   framePromise = new Promise((resolve, reject) => {
     const frame = document.createElement('iframe');
     frame.src = `${SYNC_ORIGIN}/?embed=1`;
-    frame.title = 'EZWIN HUB eşitleme';
+    frame.title = `${PRODUCT_NAME} eşitleme`;
     frame.setAttribute('aria-hidden', 'true');
     frame.tabIndex = -1;
     frame.style.position = 'fixed';

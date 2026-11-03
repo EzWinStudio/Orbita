@@ -108,7 +108,7 @@ export default function App() {
         <div className="fatal-card">
           <span className="fatal-icon"><AlertTriangle size={20} /></span>
           <LogoMark size={34} />
-          <h1>{t('EZWIN HUB başlatılamadı')}</h1>
+          <h1>{t('Orbita başlatılamadı')}</h1>
           <p>{fatalError ?? t('Veriler yüklenemedi. Uygulamayı yeniden başlatmayı dene.')}</p>
           <button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>
             <RotateCw size={15} /> {t('Yeniden dene')}

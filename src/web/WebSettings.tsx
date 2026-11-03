@@ -590,7 +590,7 @@ export function WebSettings() {
           <div className="setting-row">
             <div className="setting-text">
               <strong>{t('Sürüm')}</strong>
-              <span>{meta?.appVersion ?? '1.4.2'}</span>
+              <span>{meta?.appVersion ?? '2.0.0'}</span>
             </div>
             <span className="web-platform-badge">
               {IS_TRAY ? t('Masaüstü') : t('Web sürümü')}

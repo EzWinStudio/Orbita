@@ -50,7 +50,7 @@ namespace Ezwin.Hub.Tray
             {
                 using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url))
                 {
-                    request.Headers.UserAgent.ParseAdd("EZWIN-HUB-Tray/1.0");
+                    request.Headers.UserAgent.ParseAdd("Orbita/2.0");
                     using (HttpResponseMessage response = client.SendAsync(
                         request,
                         HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult())

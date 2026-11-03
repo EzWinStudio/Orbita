@@ -12,13 +12,13 @@ namespace Ezwin.Hub.Tray
         private static void Main(string[] args)
         {
             bool created;
-            mutex = new Mutex(true, "Local\\EZWINHUBTray", out created);
+            mutex = new Mutex(true, "Local\\OrbitaTray", out created);
             if (!created)
             {
                 TrayPaths.Log("second instance: requesting show");
                 try
                 {
-                    using (EventWaitHandle show = EventWaitHandle.OpenExisting("Local\\EZWINHUBTrayShow"))
+                    using (EventWaitHandle show = EventWaitHandle.OpenExisting("Local\\OrbitaTrayShow"))
                     {
                         show.Set();
                         TrayPaths.Log("second instance: show requested");
@@ -43,7 +43,7 @@ namespace Ezwin.Hub.Tray
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            using (EventWaitHandle showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\EZWINHUBTrayShow"))
+            using (EventWaitHandle showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\OrbitaTrayShow"))
             using (TrayContext context = new TrayContext(showEvent, background))
             {
                 Application.Run(context);

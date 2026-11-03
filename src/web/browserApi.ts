@@ -1,4 +1,5 @@
 import { tGlobal } from '../i18n/core';
+import { PRODUCT_NAME } from '../lib/product';
 import { normalizeLanguage } from '../i18n/languages';
 import type {
   AppData,
@@ -25,7 +26,7 @@ const SAVED_AT_KEY = 'ezwin.hub.web.savedAt.v1';
 const RATES_KEY = 'ezwin.hub.web.rates.v1';
 const RATES_URL = 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,EUR';
 const RATES_MAX_AGE = 15 * 60 * 1000;
-const WEB_VERSION = '1.4.2';
+const WEB_VERSION = '2.0.0';
 
 const COMPANY_STATUSES: CompanyStatus[] = ['active', 'maintenance', 'paused'];
 const COMPANY_CATEGORIES: CompanyCategory[] = [
@@ -622,7 +623,7 @@ function downloadJson(payload: unknown): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `ezwin-hub-web-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.download = `orbita-web-yedek-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
@@ -1077,7 +1078,7 @@ export function installBrowserApi(): void {
           permission = await Notification.requestPermission();
         }
         if (permission !== 'granted') return false;
-        new Notification('EZWIN HUB', { body: tGlobal('Test bildirimi gönderildi.') });
+        new Notification(PRODUCT_NAME, { body: tGlobal('Test bildirimi gönderildi.') });
         return true;
       },
     },

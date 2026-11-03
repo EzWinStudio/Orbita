@@ -401,6 +401,7 @@ kbd {
 
 .logo-mark {
   flex: none;
+  color: var(--accent);
   border-radius: 9px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 10px 26px rgba(0, 0, 0, 0.35);
 }
@@ -413,11 +414,11 @@ kbd {
   line-height: 1;
 }
 
-.wm-ez {
+.wm-orb {
   color: var(--text);
 }
 
-.wm-win {
+.wm-ita {
   color: var(--accent);
 }
 
@@ -4414,21 +4415,21 @@ kbd {
   font-size: 24px;
 }
 
-.boot-wordmark .wm-ez {
+.boot-wordmark .wm-orb {
   display: inline-block;
-  animation: wm-ez-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: wm-orb-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.boot-wordmark .wm-win {
+.boot-wordmark .wm-ita {
   display: inline-block;
-  animation: wm-win-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.14s both;
+  animation: wm-ita-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.14s both;
 }
 
 .boot-wordmark .wordmark-badge {
   animation: wm-badge-in 0.4s ease 0.34s both;
 }
 
-@keyframes wm-ez-in {
+@keyframes wm-orb-in {
   from {
     opacity: 0;
     clip-path: inset(0 100% 0 0);
@@ -4441,7 +4442,7 @@ kbd {
   }
 }
 
-@keyframes wm-win-in {
+@keyframes wm-ita-in {
   from {
     opacity: 0;
     clip-path: inset(0 100% 0 0);

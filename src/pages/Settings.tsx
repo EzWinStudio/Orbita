@@ -247,7 +247,7 @@ export function Settings() {
           <div className="setting-row">
             <div className="setting-text">
               <strong>{t('Windows açılışında başlat')}</strong>
-              <span>{t('Bilgisayar açıldığında EZWIN HUB otomatik açılır.')}</span>
+              <span>{t('Bilgisayar açıldığında Orbita otomatik açılır.')}</span>
             </div>
             <button
               type="button"
@@ -622,7 +622,7 @@ export function Settings() {
                 </span>
               </li>
               <li>
-                <span>{t('Anahtarı buraya yapıştır ve kaydet. Anahtar yalnızca Google API isteklerinde kullanılır; EZWIN HUB sunucusuna gönderilmez.')}</span>
+                <span>{t('Anahtarı buraya yapıştır ve kaydet. Anahtar yalnızca Google API isteklerinde kullanılır; Orbita sunucusuna gönderilmez.')}</span>
               </li>
             </ol>
           </details>
@@ -741,7 +741,7 @@ export function Settings() {
             <span className="card-icon"><Monitor size={17} /></span>
           </div>
           <div className="about-rows">
-            <div><span>{t('Uygulama')}</span><strong>EZWIN HUB</strong></div>
+            <div><span>{t('Uygulama')}</span><strong>ORBITA</strong></div>
             <div><span>{t('Sürüm')}</span><strong>v{meta?.appVersion ?? '1.0.0'}</strong></div>
             <div><span>{t('Platform')}</span><strong>Windows · x64</strong></div>
             <div><span>{t('Veri saklama')}</span><strong>{t('Yerel, şifreli anahtarlar')}</strong></div>

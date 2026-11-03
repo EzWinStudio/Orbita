@@ -30,12 +30,12 @@ foreach ($repo in $repos) {
     Remove-Item $zip
 }
 
-$installer = Join-Path $output 'EZWIN-HUB-Tray-Setup-1.0.9.exe'
-$installerUrl = 'https://github.com/EzWinStudio/ezwin-hub-app/releases/download/v1.0.9/EZWIN-HUB-Tray-Setup-1.0.9.exe'
+$installer = Join-Path $output 'Orbita-Setup-2.0.0.exe'
+$installerUrl = 'https://github.com/EzWinStudio/ezwin-hub-app/releases/download/v2.0.0/Orbita-Setup-2.0.0.exe'
 Write-Host 'İndiriliyor: Windows kurulum paketi'
 Invoke-WebRequest -Uri $installerUrl -OutFile $installer
 $hash = (Get-FileHash -Algorithm SHA256 -Path $installer).Hash.ToLower()
-if ($hash -ne '2c4fb7832c43b5002614cade87bcab8c45c502f6e6f329ac86e08eeb9c4f2201') {
+if ($hash -ne 'bf9e9b66cee91f1345c428133c5bfcf0ff385e96f0256c69edd75733f99e43b1') {
     throw "Kurulum paketi doğrulanamadı: $hash"
 }
 

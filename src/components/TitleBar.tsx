@@ -23,7 +23,7 @@ export function TitleBar({ page, label, onOpenPalette, onOpenTools }: TitleBarPr
   return (
     <header className="titlebar">
       <div className="titlebar-left">
-        <span className="titlebar-brand">EZWIN HUB</span>
+        <span className="titlebar-brand">ORBITA</span>
         <span className="titlebar-sep" />
         <span className="titlebar-page">{label ?? t(PAGE_LABEL[page])}</span>
       </div>

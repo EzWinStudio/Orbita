@@ -1,11 +1,11 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("EZWIN HUB Tray")]
-[assembly: AssemblyDescription("EZWIN HUB masaüstü tepsi yardımcısı")]
+[assembly: AssemblyTitle("Orbita")]
+[assembly: AssemblyDescription("Orbita masaüstü tepsi uygulaması")]
 [assembly: AssemblyCompany("EZWIN")]
-[assembly: AssemblyProduct("EZWIN HUB Tray")]
+[assembly: AssemblyProduct("Orbita")]
 [assembly: AssemblyCopyright("© 2026 EZWIN")]
 [assembly: ComVisible(false)]
-[assembly: AssemblyVersion("1.0.9.0")]
-[assembly: AssemblyFileVersion("1.0.9.0")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]

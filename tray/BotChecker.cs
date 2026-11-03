@@ -176,7 +176,7 @@ namespace Ezwin.Hub.Tray
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, DiscordApi + path);
             request.Headers.TryAddWithoutValidation("Authorization", "Bot " + token);
             request.Headers.TryAddWithoutValidation("Accept", "application/json");
-            request.Headers.TryAddWithoutValidation("User-Agent", "DiscordBot (https://ezwin.hub, 1.0)");
+            request.Headers.TryAddWithoutValidation("User-Agent", "DiscordBot (https://github.com/EzWinStudio/ezwin-hub-app, 2.0)");
             return client.SendAsync(request, HttpCompletionOption.ResponseContentRead)
                 .GetAwaiter()
                 .GetResult();

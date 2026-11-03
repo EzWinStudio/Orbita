@@ -1,8 +1,8 @@
 {
-  "name": "ezwin-hub",
-  "version": "1.10.1",
+  "name": "orbita",
+  "version": "2.0.0",
   "private": true,
-  "description": "EZWIN HUB — kişisel şirket komuta merkezi",
+  "description": "Orbita — kişisel şirket komuta merkezi",
   "author": "EzWin",
   "main": "electron/main.cjs",
   "scripts": {
@@ -36,8 +36,8 @@
   },
   "build": {
     "appId": "com.ezwin.hub",
-    "productName": "EZWIN HUB",
-    "executableName": "EZWIN HUB",
+    "productName": "Orbita",
+    "executableName": "Orbita",
     "copyright": "© 2026 EZWIN",
     "directories": {
       "output": "release-artifacts",
@@ -67,7 +67,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "EZWIN HUB",
+      "shortcutName": "Orbita",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,
       "license": "build/license.txt",
@@ -79,7 +79,7 @@
         "tr_TR",
         "en_US"
       ],
-      "artifactName": "EZWIN-HUB-Setup-${version}.${ext}"
+      "artifactName": "Orbita-Setup-${version}.${ext}"
     }
   }
 }

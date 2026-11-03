@@ -32,18 +32,17 @@ function sidebarSvg() {
   <rect width="${SIDEBAR_W}" height="${SIDEBAR_H}" fill="url(#bg)"/>
   <circle cx="34" cy="40" r="76" fill="${mint}" fill-opacity="0.10"/>
   <circle cx="140" cy="250" r="70" fill="${mint}" fill-opacity="0.05"/>
-  <g transform="translate(30 34) scale(0.105)">
-    <path d="M318 306H654L696 366H360L318 306Z" fill="url(#mint)"/>
-    <path d="M356 414H636L678 474H398L356 414Z" fill="url(#mint)" fill-opacity="0.92"/>
-    <path d="M394 522H604L646 582H436L394 522Z" fill="url(#mint)" fill-opacity="0.84"/>
-    <path d="M318 678H560V738H318V678Z" fill="url(#mint)"/>
-    <path d="M690 404V718H630V474L690 404Z" fill="url(#mint)" fill-opacity="0.55"/>
+  <g transform="translate(22 30)">
+    <ellipse cx="29" cy="29" rx="24.5" ry="14.6" transform="rotate(-26 29 29)" fill="none" stroke="url(#mint)" stroke-width="4"/>
+    <circle cx="29" cy="29" r="8.6" fill="none" stroke="#eafff7" stroke-opacity="0.92" stroke-width="2.6"/>
+    <circle cx="29" cy="29" r="3.6" fill="url(#mint)"/>
+    <circle cx="48.2" cy="15.2" r="4.4" fill="url(#mint)"/>
   </g>
-  <text x="30" y="186" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#eafff7" letter-spacing="1">EZWIN</text>
+  <text x="30" y="186" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#eafff7" letter-spacing="1">ORBITA</text>
   <rect x="30" y="196" width="34" height="3" rx="1.5" fill="${mint}"/>
   <text x="30" y="219" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#7f9c92">Şirketini tek yerden</text>
   <text x="30" y="234" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#7f9c92">yönet.</text>
-  <text x="30" y="292" font-family="Segoe UI, Arial, sans-serif" font-size="8.5" fill="#4d6a60">EZWIN HUB · v${version}</text>
+  <text x="30" y="292" font-family="Segoe UI, Arial, sans-serif" font-size="8.5" fill="#4d6a60">Orbita · v${version}</text>
 </svg>`;
 }
 
@@ -60,15 +59,14 @@ function headerSvg() {
     </linearGradient>
   </defs>
   <rect width="${HEADER_W}" height="${HEADER_H}" fill="url(#hb)"/>
-  <g transform="translate(10 15) scale(0.026)">
-    <path d="M318 306H654L696 366H360L318 306Z" fill="url(#hm)"/>
-    <path d="M356 414H636L678 474H398L356 414Z" fill="url(#hm)" fill-opacity="0.92"/>
-    <path d="M394 522H604L646 582H436L394 522Z" fill="url(#hm)" fill-opacity="0.84"/>
-    <path d="M318 678H560V738H318V678Z" fill="url(#hm)"/>
-    <path d="M690 404V718H630V474L690 404Z" fill="url(#hm)" fill-opacity="0.55"/>
+  <g transform="translate(9 13)">
+    <ellipse cx="15" cy="15" rx="12.7" ry="7.6" transform="rotate(-26 15 15)" fill="none" stroke="url(#hm)" stroke-width="2.1"/>
+    <circle cx="15" cy="15" r="4.4" fill="none" stroke="#eafff7" stroke-opacity="0.92" stroke-width="1.4"/>
+    <circle cx="15" cy="15" r="1.9" fill="url(#hm)"/>
+    <circle cx="24.9" cy="7.8" r="2.3" fill="url(#hm)"/>
   </g>
-  <text x="52" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#eafff7" letter-spacing="0.8">EZWIN</text>
-  <text x="52" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#7f9c92">HUB · kurulum</text>
+  <text x="52" y="27" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#eafff7" letter-spacing="0.8">ORBITA</text>
+  <text x="52" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#7f9c92">komuta merkezi · kurulum</text>
 </svg>`;
 }
 

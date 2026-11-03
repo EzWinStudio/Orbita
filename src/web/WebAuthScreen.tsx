@@ -18,6 +18,7 @@ import { LogoMark, Wordmark } from '../components/Logo';
 import { useI18n } from '../i18n';
 import { translateMessage } from '../i18n/core';
 import { IS_TRAY } from '../lib/runtime';
+import { PRODUCT_NAME } from '../lib/product';
 import type { LanguageCode } from '../types';
 import { AccountAvatar } from './AccountAvatar';
 import {
@@ -57,7 +58,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
   const passwordRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    document.title = 'EZWIN HUB';
+    document.title = PRODUCT_NAME;
   }, []);
 
   useEffect(() => {
@@ -373,7 +374,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                         name="name"
                         value={name}
                         onChange={(event) => setName(event.target.value)}
-                        placeholder="EzWin"
+                        placeholder="Orbita"
                         maxLength={60}
                         autoComplete="name"
                         autoFocus
@@ -389,7 +390,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                         dir="ltr"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
-                        placeholder="ornek@ezwin.com"
+                        placeholder="ornek@orbita.app"
                         maxLength={EMAIL_MAX_LENGTH}
                         autoComplete="email"
                         inputMode="email"
@@ -409,7 +410,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                       dir="ltr"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
-                      placeholder="ornek@ezwin.com"
+                      placeholder="ornek@orbita.app"
                       maxLength={EMAIL_MAX_LENGTH}
                       autoComplete="email"
                       inputMode="email"

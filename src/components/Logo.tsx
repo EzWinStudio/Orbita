@@ -15,11 +15,18 @@ export function LogoMark({ size = 30 }: LogoMarkProps) {
     >
       <rect width="32" height="32" rx="9" fill="#0b1512" />
       <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="8.25" stroke="white" strokeOpacity="0.1" strokeWidth="1.5" />
-      <path d="M8.4 9.2H19L20.6 12.1H10L8.4 9.2Z" fill="#3ef2b5" />
-      <path d="M10 14.4H18L19.6 17.3H11.6L10 14.4Z" fill="#3ef2b5" fillOpacity="0.86" />
-      <path d="M11.6 19.6H16.6V22.5H11.6V19.6Z" fill="#3ef2b5" />
-      <path d="M22 12.4V22.5H19V15.6L22 12.4Z" fill="#3ef2b5" fillOpacity="0.45" />
-      <circle cx="23.7" cy="8.7" r="1.5" fill="#3ef2b5" />
+      <ellipse
+        cx="16"
+        cy="16"
+        rx="10.2"
+        ry="6.1"
+        transform="rotate(-26 16 16)"
+        stroke="currentColor"
+        strokeWidth="2.1"
+      />
+      <circle cx="16" cy="16" r="3.5" stroke="#eafff7" strokeOpacity="0.92" strokeWidth="1.3" />
+      <circle cx="16" cy="16" r="1.5" fill="currentColor" />
+      <circle cx="24" cy="10" r="1.7" fill="currentColor" />
     </svg>
   );
 }
@@ -28,11 +35,11 @@ export function Wordmark({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`wordmark ${compact ? 'wordmark-compact' : ''}`}>
       <LogoMark size={compact ? 24 : 30} />
-      <span className="wordmark-text" aria-label="EZWIN HUB">
-        <span className="wm-ez">EZ</span>
-        <span className="wm-win">WIN</span>
+      <span className="wordmark-text" aria-label="Orbita">
+        <span className="wm-orb">ORB</span>
+        <span className="wm-ita">ITA</span>
       </span>
-      <span className="wordmark-badge">HUB</span>
+      <span className="wordmark-badge">HQ</span>
     </div>
   );
 }

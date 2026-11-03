@@ -273,7 +273,7 @@ export function Translate() {
       </div>
 
       <p className="setting-note translate-privacy">
-        {t('Metin, çeviri için MyMemory servisine gönderilir; EZWIN HUB sunucusunda saklanmaz.')}
+        {t('Metin, çeviri için MyMemory servisine gönderilir; Orbita sunucusunda saklanmaz.')}
       </p>
 
       <div className="card">

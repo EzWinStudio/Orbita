@@ -3,14 +3,14 @@ const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
-const version = '1.0.9';
-const version4 = '1.0.9.0';
+const version = '2.0.0';
+const version4 = '2.0.0.0';
 const sdkVersion = '1.0.4314.35';
 const trayRoot = path.join(root, 'tray');
 const webDist = path.join(root, 'web-dist');
 const outputRoot = path.join(root, 'release-artifacts-tray');
 const stage = path.join(outputRoot, 'app');
-const exeName = 'EZWIN HUB Tray.exe';
+const exeName = 'Orbita.exe';
 const cacheRoot = path.join(root, '.build-cache', 'webview2');
 const sdkRoot = path.join(cacheRoot, 'sdk');
 const framework = path.join(process.env.SystemRoot || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319');
@@ -93,7 +93,7 @@ function stageApp() {
   fs.rmSync(stage, { recursive: true, force: true });
   fs.mkdirSync(stage, { recursive: true });
   fs.cpSync(webDist, path.join(stage, 'web'), { recursive: true });
-  copyFile(path.join(webDist, 'favicon.ico'), path.join(stage, 'ezwin.ico'));
+  copyFile(path.join(webDist, 'favicon.ico'), path.join(stage, 'orbita.ico'));
   copyFile(
     path.join(sdkRoot, 'lib', 'net462', 'Microsoft.Web.WebView2.Core.dll'),
     path.join(stage, 'Microsoft.Web.WebView2.Core.dll'),
@@ -135,7 +135,7 @@ function compile() {
     '/platform:x64',
     '/langversion:5',
     '/optimize+',
-    `/win32icon:${path.join(stage, 'ezwin.ico')}`,
+    `/win32icon:${path.join(stage, 'orbita.ico')}`,
     `/win32manifest:${path.join(trayRoot, 'app.manifest')}`,
     `/out:${path.join(stage, exeName)}`,
     ...references.map((reference) => `/r:${reference}`),
@@ -151,7 +151,7 @@ function compile() {
 }
 
 function buildZip() {
-  const zip = path.join(outputRoot, `EZWIN-HUB-Tray-${version}-portable.zip`);
+  const zip = path.join(outputRoot, `Orbita-${version}-portable.zip`);
   fs.rmSync(zip, { force: true });
   execFileSync(tar, ['-a', '-c', '-f', zip, '-C', stage, '.'], { stdio: 'inherit' });
   return zip;
@@ -160,7 +160,7 @@ function buildZip() {
 function buildInstaller() {
   const makensis = findMakensis();
   if (!makensis) fail('makensis.exe bulunamadı. NSIS kurulumu gerekli.');
-  const installer = path.join(outputRoot, `EZWIN-HUB-Tray-Setup-${version}.exe`);
+  const installer = path.join(outputRoot, `Orbita-Setup-${version}.exe`);
   fs.rmSync(installer, { force: true });
   console.log('[build-tray] NSIS paketi hazırlanıyor');
   const result = spawnSync(
@@ -171,7 +171,7 @@ function buildInstaller() {
       `/DVERSION4=${version4}`,
       `/DSRCDIR=${stage}`,
       `/DOUTFILE=${installer}`,
-      `/DICONFILE=${path.join(stage, 'ezwin.ico')}`,
+      `/DICONFILE=${path.join(stage, 'orbita.ico')}`,
       path.join(root, 'installer', 'tray.nsi'),
     ],
     { cwd: root, encoding: 'utf8', windowsHide: true },

@@ -63,7 +63,7 @@ export function AccountGate({ accounts, onAuthed }: AccountGateProps) {
     if (busy) return;
     const api = window.ezwin;
     if (!api) {
-      setError('Uygulama köprüsü kurulamadı. EZWIN HUB’ı uygulama olarak başlat.');
+      setError('Uygulama köprüsü kurulamadı. Orbita’yı uygulama olarak başlat.');
       return;
     }
     setBusy(true);
@@ -252,7 +252,7 @@ export function AccountGate({ accounts, onAuthed }: AccountGateProps) {
           <span className="gate-gradient">yönet.</span>
         </h1>
         <p>
-          EZWIN HUB hesabınla giriş yap. Kanal bağlantıların, müziğin, notların ve finans
+          Orbita hesabınla giriş yap. Kanal bağlantıların, müziğin, notların ve finans
           kayıtların yalnızca senin hesabına ait klasörde tutulur.
         </p>
         <ul className="gate-features">
@@ -343,7 +343,7 @@ export function AccountGate({ accounts, onAuthed }: AccountGateProps) {
                   className="input"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="EzWin"
+                  placeholder="Orbita"
                   maxLength={60}
                   autoComplete="name"
                 />
@@ -357,7 +357,7 @@ export function AccountGate({ accounts, onAuthed }: AccountGateProps) {
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="sen@ezwin.com"
+                placeholder="sen@orbita.app"
                 required
                 autoComplete="email"
               />

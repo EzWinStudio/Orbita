@@ -182,7 +182,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const api = window.ezwin;
     if (!api) {
       setFatalError(
-        tGlobal('Arayüz masaüstü uygulaması dışında açıldı. EZWIN HUB’ı başlatmak için uygulamayı çalıştır.'),
+        tGlobal('Arayüz masaüstü uygulaması dışında açıldı. Orbita’yı başlatmak için uygulamayı çalıştır.'),
       );
       setLoading(false);
       return;
