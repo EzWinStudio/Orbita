@@ -14,6 +14,16 @@ Bu depo, EZWIN HUB ekosistemindeki her şeyi tek yerden indirmek için hazırlan
 
 Kurulum paketi `EZWIN-HUB-Tray-Setup-1.0.7.exe` adıyla sürüm sayfasına yüklenir. Uygulama `%LOCALAPPDATA%\Programs\EZWIN HUB Tray` klasörüne kurulur ve veriler kullanıcı profilinde kalır.
 
+## Tüm repoları tek komutla indir
+
+PowerShell açıp bu depoyu indirdikten sonra:
+
+```powershell
+.\download-all.ps1
+```
+
+Betik; uygulamayı, EZWIN HUB web sitesini, Şimşek Diecast'i, tüm şirket sitelerini ve portfolyo kaynaklarını `EZWIN-REPOS` klasörüne ZIP olarak indirip açar; ardından Windows kurulum paketini indirir ve SHA-256 ile doğrular.
+
 ## Neler var?
 
 | Klasör | İçerik |
