@@ -11,8 +11,9 @@ Bu depo, Orbita ekosistemindeki her şeyi tek yerden indirmek için hazırlandı
 | Tüm kaynak (ZIP) | [ezwin-hub-app/main.zip](https://github.com/EzWinStudio/ezwin-hub-app/archive/refs/heads/main.zip) |
 | Windows kurulum paketi | [Sürümler / Releases](https://github.com/EzWinStudio/ezwin-hub-app/releases/latest) |
 | Canlı web uygulaması | [orbita.wasmer.app](https://orbita.wasmer.app) |
+| Windows kurulum sayfası | [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) |
 
-Kurulum paketi `Orbita-Setup-2.0.0.exe` adıyla sürüm sayfasına yüklenir. Uygulama `%LOCALAPPDATA%\Programs\Orbita` klasörüne kurulur; mevcut EZWIN HUB verileri, yedekler ve bot sırları korunur.
+Kurulum paketi `Orbita-Setup-2.0.1.exe` adıyla sürüm sayfasına yüklenir. Premium kurulum sayfası [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) üzerinden doğrudan indirilebilir. Uygulama `%LOCALAPPDATA%\Programs\Orbita` klasörüne kurulur; mevcut EZWIN HUB verileri, yedekler ve bot sırları korunur.
 
 Kanıtlanmış eski adres [ezwin-hub.wasmer.app](https://ezwin-hub.wasmer.app) de aynı Orbita sürümünü sunar.
 
@@ -101,8 +102,8 @@ npm run build:tray
 Çıktılar `release-artifacts-tray/` altında oluşur:
 
 - `Orbita.exe`
-- `Orbita-Setup-2.0.0.exe`
-- `Orbita-2.0.0-portable.zip`
+- `Orbita-Setup-2.0.1.exe`
+- `Orbita-2.0.1-portable.zip`
 
 ## Güvenlik ve veri
 

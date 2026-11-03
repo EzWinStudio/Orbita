@@ -2,6 +2,10 @@
 
 Orbita; web, Windows masaüstü ve telefon PWA olarak aynı veriyle çalışan yerel öncelikli komuta merkezidir.
 
+## İndirme sayfası
+
+Premium kurulum sayfası: [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/)
+
 ## Web ve telefon
 
 1. [orbita.wasmer.app](https://orbita.wasmer.app) adresini aç.
@@ -14,7 +18,7 @@ Web verileri tarayıcıda kalır. Cihazlar arasında ortak veri için Ayarlar > 
 
 | | |
 | --- | --- |
-| Dosya | `Orbita-Setup-2.0.0.exe` |
+| Dosya | `Orbita-Setup-2.0.1.exe` |
 | İşletim sistemi | Windows 10 / 11, 64 bit |
 | Yetki | Yönetici izni istemez (kullanıcı klasörüne kurulur) |
 | Kurulum yeri | `%LOCALAPPDATA%\Programs\Orbita` |

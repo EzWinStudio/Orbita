@@ -1,4 +1,4 @@
-/* Orbita web shell — 2.0.0 interface */
+/* Orbita web shell — 2.0.1 interface */
 
 .app {
   height: 100dvh;
@@ -439,6 +439,92 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.02);
   color: var(--text-3);
+}
+
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-download-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: 600 11px/1 var(--mono);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.auth-download-chip:hover {
+  background: rgba(var(--accent-rgb), 0.14);
+  border-color: rgba(var(--accent-rgb), 0.42);
+}
+
+.auth-desktop-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 372px);
+  margin-top: 26px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 150% at 0% 0%, rgba(var(--accent-rgb), 0.13), transparent 62%),
+    rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.auth-desktop-cta:hover {
+  border-color: var(--accent-border);
+  background:
+    radial-gradient(120% 150% at 0% 0%, rgba(var(--accent-rgb), 0.2), transparent 62%),
+    rgba(255, 255, 255, 0.035);
+  transform: translateY(-1px);
+}
+
+.auth-desktop-cta > svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.auth-desktop-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--accent-border);
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.auth-desktop-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.auth-desktop-text strong {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.auth-desktop-text em {
+  color: var(--text-3);
+  font-size: 10.5px;
+  font-style: normal;
 }
 
 .auth-lang select {

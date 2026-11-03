@@ -3,8 +3,8 @@ const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
-const version = '2.0.0';
-const version4 = '2.0.0.0';
+const version = '2.0.1';
+const version4 = '2.0.1.0';
 const sdkVersion = '1.0.4314.35';
 const trayRoot = path.join(root, 'tray');
 const webDist = path.join(root, 'web-dist');
@@ -172,6 +172,8 @@ function buildInstaller() {
       `/DSRCDIR=${stage}`,
       `/DOUTFILE=${installer}`,
       `/DICONFILE=${path.join(stage, 'orbita.ico')}`,
+      `/DSIDEBARFILE=${path.join(root, 'build', 'installer-sidebar.bmp')}`,
+      `/DHEADERFILE=${path.join(root, 'build', 'installer-header.bmp')}`,
       path.join(root, 'installer', 'tray.nsi'),
     ],
     { cwd: root, encoding: 'utf8', windowsHide: true },

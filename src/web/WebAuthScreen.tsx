@@ -11,6 +11,7 @@ import {
   Loader2,
   LockKeyhole,
   LogIn,
+  MonitorDown,
   ShieldCheck,
   UserPlus,
 } from 'lucide-react';
@@ -159,20 +160,28 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
           <Wordmark />
           <span className="auth-web-tag">{IS_TRAY ? t('Masaüstü') : 'Web'}</span>
         </div>
-        <label className="auth-lang">
-          <Languages size={14} aria-hidden="true" />
-          <select
-            value={language}
-            onChange={(event) => setLanguage(event.target.value as LanguageCode)}
-            aria-label={t('Dil')}
-          >
-            {languages.map((item) => (
-              <option key={item.code} value={item.code}>
-                {item.nativeName}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="auth-actions">
+          {IS_TRAY ? null : (
+            <a className="auth-download-chip" href="./indir/" title={t('Windows uygulamasını indir')}>
+              <MonitorDown size={14} aria-hidden="true" />
+              <span>Windows</span>
+            </a>
+          )}
+          <label className="auth-lang">
+            <Languages size={14} aria-hidden="true" />
+            <select
+              value={language}
+              onChange={(event) => setLanguage(event.target.value as LanguageCode)}
+              aria-label={t('Dil')}
+            >
+              {languages.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.nativeName}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </header>
 
       <main className="auth-main">
@@ -211,6 +220,18 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
               <span>{t('Profil fotoğrafı ve şirket logoları yüklenebilir.')}</span>
             </li>
           </ul>
+          {IS_TRAY ? null : (
+            <a className="auth-desktop-cta" href="./indir/">
+              <span className="auth-desktop-icon">
+                <MonitorDown size={18} aria-hidden="true" />
+              </span>
+              <span className="auth-desktop-text">
+                <strong>{t('Windows uygulamasını indir')}</strong>
+                <em>{t('Tepside çalışır; veriler yerelde kalır.')}</em>
+              </span>
+              <ArrowRight size={16} aria-hidden="true" />
+            </a>
+          )}
         </section>
 
         <section className="auth-panel">

@@ -955,6 +955,8 @@ export const en = {
   "İyi": "Good",
   "Güçlü": "Strong",
   "Yerel komuta merkezi": "Local command center",
+  "Windows uygulamasını indir": "Download the Windows app",
+  "Tepside çalışır; veriler yerelde kalır.": "Runs in the tray; data stays local.",
   "Komuta merkezi senin elinde.": "The command center is in your hands.",
   "Şirketler, servisler, finans, görevler ve notlar; hepsi bu tarayıcıda. Yerel hesabınla aç, kaldığın yerden devam et.": "Companies, services, finance, tasks and notes; all in this browser. Open with your local account and pick up where you left off.",
   "Hesap ve veriler yalnızca bu tarayıcıda kalır.": "Account and data stay only in this browser.",

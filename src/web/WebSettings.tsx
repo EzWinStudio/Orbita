@@ -5,6 +5,7 @@ import {
   Download,
   HardDrive,
   LogOut,
+  MonitorDown,
   PackageOpen,
   Palette,
   Server,
@@ -605,6 +606,18 @@ export function WebSettings() {
             </div>
             <span className="card-icon card-icon-soft"><HardDrive size={17} /></span>
           </div>
+          {!IS_TRAY ? (
+            <div className="setting-row">
+              <div className="setting-text">
+                <strong>Windows</strong>
+                <span>{t('Tepside çalışır; veriler yerelde kalır.')}</span>
+              </div>
+              <a className="btn btn-secondary btn-sm" href="./indir/">
+                <MonitorDown size={14} />
+                {t('Windows uygulamasını indir')}
+              </a>
+            </div>
+          ) : null}
           <p className="setting-note">
             {t(
               'Tek kişilik komuta merkezi. Şirket portföyün, finans, görevler ve notlar tek uygulamada; veriler bu cihazda kalır.',
