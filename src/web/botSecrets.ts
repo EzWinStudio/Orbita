@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { scopedStorageKey } from './workspaceScope';
 
 const BOT_HINTS_KEY = 'ezwin.hub.web.botHints.v1';
 const BOT_HINTS_EVENT = 'ezwin:bot-hints';
@@ -7,7 +8,7 @@ export type BotHints = Record<string, string>;
 
 export function readBotHints(): BotHints {
   try {
-    const raw = localStorage.getItem(BOT_HINTS_KEY);
+    const raw = localStorage.getItem(scopedStorageKey(BOT_HINTS_KEY));
     if (!raw) return {};
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
@@ -23,7 +24,7 @@ export function readBotHints(): BotHints {
 
 export function writeBotHints(hints: BotHints): void {
   try {
-    localStorage.setItem(BOT_HINTS_KEY, JSON.stringify(hints));
+    localStorage.setItem(scopedStorageKey(BOT_HINTS_KEY), JSON.stringify(hints));
   } catch {
     /* the hint is cosmetic; the tray keeps the encrypted token */
   }

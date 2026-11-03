@@ -1006,6 +1006,41 @@ export const en = {
   "Bu cihazda zaten bir yerel hesap var.": "A local account already exists on this device.",
   "Bu cihazda kayıtlı yerel hesap yok.": "No local account is registered on this device.",
   "E-posta veya şifre hatalı.": "Incorrect email or password.",
+  "Yeni hesap ekle": "Add another account",
+  "Bu cihaza yeni bir hesap ekle.": "Add another account to this device.",
+  "Bu cihazdaki hesaplar": "Accounts on this device",
+  "Giriş yapmak istediğin hesabı seç.": "Choose the account you want to sign in to.",
+  "Bu cihazda henüz hesap yok.": "There are no accounts on this device yet.",
+  "Başka bir cihazdaki hesabı içe aktar veya yeni bir hesap oluştur.":
+    "Import an account from another device or create a new account.",
+  "Hesap dosyası içe aktar": "Import account file",
+  "Başka bir cihazdaki hesabı bu cihaza ekle.": "Add an account from another device to this one.",
+  "Bu cihazda e-posta veya sunucu yok; şifre kurtarma yapılamaz. Sıfırlarsan yalnızca bu hesabın giriş kaydı bu cihazdan silinir. Çalışma alanı verileri korunur.":
+    "There is no email or server on this device, so password recovery is not possible. Resetting removes only this account's sign-in record from this device. Workspace data is preserved.",
+  "Birden fazla hesap ekleyebilir, giriş ekranından hesap seçebilirsin.":
+    "You can add more than one account and choose one on the sign-in screen.",
+  "Hesap dosyası": "Account file",
+  "Hesap dosyası, bu hesaba başka bir cihazda giriş yapmak için kullanılır. Dosyayı gizli tut.":
+    "The account file lets you sign in to this account on another device. Keep the file private.",
+  "Hesabı dışa aktar": "Export account",
+  "Hesap dosyası dışa aktarıldı.": "Account file exported.",
+  "Hesap dosyası dışa aktarılamadı.": "The account file could not be exported.",
+  "Bu hesabın verisini temizle": "Clear this account's data",
+  "Bu hesabın tüm şirketleri, servisleri, görevleri, notları ve finans kayıtları silinecek. Diğer hesaplar etkilenmez. Bu işlem geri alınamaz.":
+    "All companies, services, tasks, notes and finance records of this account will be deleted. Other accounts are not affected. This cannot be undone.",
+  "Hesap verisi temizlendi.": "Account data cleared.",
+  "Bu e-posta ile kayıtlı bir hesap var. Giriş yapabilirsin.":
+    "An account with this email already exists. You can sign in.",
+  "Bu e-posta ile kayıtlı hesap yok.": "No account is registered with this email.",
+  "Hesabın bu cihazdan kaldırıldı.": "The account was removed from this device.",
+  "Hesap bu cihaza eklendi. Şifrenle giriş yap.":
+    "The account was added to this device. Sign in with your password.",
+  "Hesap dosyası okunamadı.": "The account file could not be read.",
+  "Bu dosya geçerli bir Orbita hesap dosyası değil.": "This is not a valid Orbita account file.",
+  "Hesap dosyası geçersiz veya eksik.": "The account file is invalid or incomplete.",
+  "Bu hesap kimliği başka bir hesapla çakışıyor.": "This account ID conflicts with another account.",
+  "Bu e-posta bu cihazda farklı bir hesapla kayıtlı.":
+    "This email is registered to a different account on this device.",
   "Yerel hesap kaydedilemedi. Tarayıcı depolamasını kontrol et.": "The local account could not be saved. Check browser storage.",
   "Oturum başlatılamadı. Tarayıcı depolamasını kontrol et.": "The session could not be started. Check browser storage.",
   "Giriş yapılamadı.": "Sign-in failed.",

@@ -1,4 +1,4 @@
-/* Orbita web shell — 2.0.1 interface */
+/* Orbita web shell — 2.1.0 interface */
 
 .app {
   height: 100dvh;
@@ -872,6 +872,203 @@
   font-size: 8.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.auth-accounts {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.auth-accounts-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.auth-accounts-head > span {
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-accounts-head small {
+  color: var(--text-3);
+  font-size: 10px;
+  text-align: end;
+}
+
+.auth-account-list {
+  display: grid;
+  gap: 6px;
+  max-height: 186px;
+  overflow-y: auto;
+  padding: 1px;
+}
+
+.auth-account-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.018);
+  color: var(--text-1);
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.auth-account-chip:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+
+.auth-account-chip.is-active {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+
+.auth-account-chip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.auth-account-chip-avatar {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  font-size: 10px;
+}
+
+.auth-account-chip-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-account-chip-text strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-account-chip-text small {
+  overflow: hidden;
+  color: var(--text-3);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-account-chip-check {
+  flex: none;
+  color: var(--accent);
+}
+
+.auth-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px dashed var(--accent-border);
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
+.auth-note-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--accent);
+}
+
+.auth-note strong {
+  display: block;
+  font-size: 11.5px;
+}
+
+.auth-note p {
+  margin: 3px 0 0;
+  color: var(--text-2);
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+
+.auth-import {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.auth-import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.auth-import-btn:hover:not(:disabled) {
+  color: var(--accent);
+}
+
+.auth-import-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.auth-import small {
+  color: var(--text-3);
+  font-size: 10px;
+  text-align: center;
+}
+
+.auth-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--accent-border);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.auth-notice svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.auth-reset-target {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  word-break: break-all;
 }
 
 .auth-form {

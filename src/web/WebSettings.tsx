@@ -27,6 +27,7 @@ import { APP_THEMES } from '../lib/appearance';
 import { fileToAvatarDataUrl } from '../lib/imageFile';
 import { useWebAuth } from './WebAuthGate';
 import { AccountAvatar } from './AccountAvatar';
+import { exportAccountBundle } from './webAuth';
 import { SyncSettings } from './SyncSettings';
 import type { ClockFormat, Currency, LanguageCode, StartPage } from '../types';
 
@@ -81,6 +82,31 @@ export function WebSettings() {
         translateMessage(
           language,
           err instanceof Error ? err.message : t('Görsel kaldırılamadı.'),
+        ),
+      );
+    }
+  };
+
+  const exportAccountFile = () => {
+    if (isGuest) return;
+    try {
+      const { fileName, text } = exportAccountBundle();
+      const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      toast('success', t('Hesap dosyası dışa aktarıldı.'));
+    } catch (err) {
+      toast(
+        'error',
+        translateMessage(
+          language,
+          err instanceof Error ? err.message : t('Hesap dosyası dışa aktarılamadı.'),
         ),
       );
     }
@@ -155,10 +181,18 @@ export function WebSettings() {
 
   const clearData = async () => {
     const ok = await confirm({
-      title: IS_TRAY ? t('Cihaz verisini temizle') : t('Tarayıcı verisini temizle'),
-      message: IS_TRAY
-        ? t('Tüm şirketler, servisler, görevler, notlar ve finans kayıtları bu cihazdan silinecek. Bu işlem geri alınamaz.')
-        : t('Tüm şirketler, servisler, görevler, notlar ve finans kayıtları bu tarayıcıdan silinecek. Bu işlem geri alınamaz.'),
+      title: isGuest
+        ? IS_TRAY
+          ? t('Cihaz verisini temizle')
+          : t('Tarayıcı verisini temizle')
+        : t('Bu hesabın verisini temizle'),
+      message: isGuest
+        ? IS_TRAY
+          ? t('Tüm şirketler, servisler, görevler, notlar ve finans kayıtları bu cihazdan silinecek. Bu işlem geri alınamaz.')
+          : t('Tüm şirketler, servisler, görevler, notlar ve finans kayıtları bu tarayıcıdan silinecek. Bu işlem geri alınamaz.')
+        : t(
+            'Bu hesabın tüm şirketleri, servisleri, görevleri, notları ve finans kayıtları silinecek. Diğer hesaplar etkilenmez. Bu işlem geri alınamaz.',
+          ),
       confirmLabel: t('Sil'),
       danger: true,
     });
@@ -166,7 +200,14 @@ export function WebSettings() {
     setBusy('clear');
     try {
       clearAllData();
-      toast('success', IS_TRAY ? t('Cihaz verisi temizlendi.') : t('Tarayıcı verisi temizlendi.'));
+      toast(
+        'success',
+        isGuest
+          ? IS_TRAY
+            ? t('Cihaz verisi temizlendi.')
+            : t('Tarayıcı verisi temizlendi.')
+          : t('Hesap verisi temizlendi.'),
+      );
       window.setTimeout(() => window.location.reload(), 650);
     } catch (err) {
       toast(
@@ -416,6 +457,31 @@ export function WebSettings() {
             )}
           </div>
 
+          <p className="setting-note">
+            {t('Birden fazla hesap ekleyebilir, giriş ekranından hesap seçebilirsin.')}
+          </p>
+
+          {!isGuest ? (
+            <div className="setting-row">
+              <div className="setting-text">
+                <strong>{t('Hesap dosyası')}</strong>
+                <span>
+                  {t(
+                    'Hesap dosyası, bu hesaba başka bir cihazda giriş yapmak için kullanılır. Dosyayı gizli tut.',
+                  )}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={exportAccountFile}
+              >
+                <Download size={14} />
+                {t('Hesabı dışa aktar')}
+              </button>
+            </div>
+          ) : null}
+
           <div className="profile-upload">
             <AccountAvatar account={account} className="profile-upload-avatar" />
             <div className="profile-upload-copy">
@@ -507,7 +573,11 @@ export function WebSettings() {
               disabled={busy === 'clear'}
             >
               <Trash2 size={14} />
-              {IS_TRAY ? t('Cihaz verisini temizle') : t('Tarayıcı verisini temizle')}
+              {isGuest
+                ? IS_TRAY
+                  ? t('Cihaz verisini temizle')
+                  : t('Tarayıcı verisini temizle')
+                : t('Bu hesabın verisini temizle')}
             </button>
           </div>
         </section>

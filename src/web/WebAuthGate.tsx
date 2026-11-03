@@ -11,9 +11,10 @@ import { translateFor } from '../i18n/core';
 import { normalizeLanguage } from '../i18n/languages';
 import type { LanguageCode } from '../types';
 import { reportBrowserSave, setStoredLanguage } from './browserApi';
+import { setWorkspaceScope } from './workspaceScope';
 import { WebAuthScreen } from './WebAuthScreen';
 import {
-  AUTH_STORAGE_KEY,
+  ACCOUNTS_STORAGE_KEY,
   SESSION_STORAGE_KEY,
   clearGuestSession,
   getActiveSession,
@@ -75,6 +76,7 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
       return { phase: 'ready', account: active.account, session: active.session, guest: false };
     }
     if (hasGuestSession()) {
+      setWorkspaceScope('guest');
       return {
         phase: 'ready',
         account: guestAccount(storedLanguage()),
@@ -108,6 +110,7 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
 
   const startGuest = useCallback(() => {
     startGuestSession();
+    setWorkspaceScope('guest');
     setState({
       phase: 'ready',
       account: guestAccount(language),
@@ -148,9 +151,9 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
     [language],
   );
 
-  const handleReset = useCallback(() => {
-    resetLocalAccount();
-    setState({ phase: 'auth', account: null });
+  const handleReset = useCallback((email?: string) => {
+    resetLocalAccount(email);
+    setState({ phase: 'auth', account: getLocalAccount() });
   }, []);
 
   const checkSession = useCallback(() => {
@@ -193,7 +196,7 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== AUTH_STORAGE_KEY && event.key !== SESSION_STORAGE_KEY) return;
+      if (event.key !== ACCOUNTS_STORAGE_KEY && event.key !== SESSION_STORAGE_KEY) return;
       checkSession();
     };
     window.addEventListener('storage', onStorage);
@@ -216,6 +219,7 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
 
   return (
     <WebAuthContext.Provider
+      key={state.guest ? 'guest' : state.account.id}
       value={{
         account: state.account,
         session: state.session,

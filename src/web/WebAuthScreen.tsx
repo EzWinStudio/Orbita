@@ -2,9 +2,11 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
+  Check,
   CloudOff,
   Eye,
   EyeOff,
+  FileJson,
   ImagePlus,
   KeyRound,
   Languages,
@@ -23,9 +25,12 @@ import { PRODUCT_NAME } from '../lib/product';
 import type { LanguageCode } from '../types';
 import { AccountAvatar } from './AccountAvatar';
 import {
+  ACCOUNTS_STORAGE_KEY,
   EMAIL_MAX_LENGTH,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  getLocalAccounts,
+  importAccountBundle,
   loginLocalAccount,
   passwordStrength,
   registerLocalAccount,
@@ -40,7 +45,7 @@ type AuthMode = 'login' | 'register';
 interface WebAuthScreenProps {
   account: LocalAccount | null;
   onAuthed: (session: AuthSession) => void;
-  onReset: () => void;
+  onReset: (email?: string) => void;
   onGuest: () => void;
 }
 
@@ -48,23 +53,37 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
   const { t, language, languages, setLanguage } = useI18n();
   const [mode, setMode] = useState<AuthMode>('login');
   const isRegister = mode === 'register';
+  const [accounts, setAccounts] = useState<LocalAccount[]>(() => getLocalAccounts());
   const [name, setName] = useState('');
   const [email, setEmail] = useState(account?.email ?? '');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.title = PRODUCT_NAME;
   }, []);
 
   useEffect(() => {
-    if (!isRegister && account) passwordRef.current?.focus();
-  }, [account, isRegister]);
+    if (!isRegister && accounts.length > 0) passwordRef.current?.focus();
+  }, [accounts.length, isRegister]);
+
+  useEffect(() => {
+    const refresh = () => setAccounts(getLocalAccounts());
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === ACCOUNTS_STORAGE_KEY) refresh();
+    };
+    window.addEventListener('storage', onStorage);
+    refresh();
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const strength = passwordStrength(password);
   const strengthLabel = strength > 0 ? t(STRENGTH_LABELS[strength - 1]) : t('Zayıf');
@@ -92,6 +111,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
 
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       if (isRegister) {
         const result = await registerLocalAccount({
@@ -124,10 +144,57 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
   function resetAccount() {
     if (busy) return;
     setError(null);
+    setNotice(null);
+    const typed = email.trim().toLowerCase();
+    const target =
+      accounts.find((item) => item.email.toLowerCase() === typed) ??
+      (accounts.length === 1 ? accounts[0] : null);
+    if (!target) {
+      setError(typed ? 'Bu e-posta ile kayıtlı hesap yok.' : 'Bu cihazda kayıtlı hesap yok.');
+      return;
+    }
     try {
-      onReset();
+      onReset(target.email);
+      setAccounts(getLocalAccounts().filter((item) => item.id !== target.id));
+      setResetOpen(false);
+      setEmail('');
+      setPassword('');
+      setNotice('Hesabın bu cihazdan kaldırıldı.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Hesap oluşturulamadı.');
+      setError(err instanceof Error ? err.message : 'Hesap kaldırılamadı.');
+    }
+  }
+
+  function chooseAccount(next: LocalAccount) {
+    if (busy) return;
+    setMode('login');
+    setResetOpen(false);
+    setError(null);
+    setNotice(null);
+    setPassword('');
+    setEmail(next.email);
+    requestAnimationFrame(() => passwordRef.current?.focus());
+  }
+
+  async function importFile(file: File) {
+    if (importBusy || busy) return;
+    setImportBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const text = await file.text();
+      const imported = importAccountBundle(text);
+      setAccounts(getLocalAccounts());
+      setMode('login');
+      setResetOpen(false);
+      setEmail(imported.email);
+      setPassword('');
+      setNotice('Hesap bu cihaza eklendi. Şifrenle giriş yap.');
+      requestAnimationFrame(() => passwordRef.current?.focus());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Hesap dosyası okunamadı.');
+    } finally {
+      setImportBusy(false);
     }
   }
 
@@ -136,6 +203,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
     setMode(next);
     setResetOpen(false);
     setError(null);
+    setNotice(null);
     setPassword('');
     setShowPassword(false);
   }
@@ -243,15 +311,17 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
               <div>
                 <h2>
                   {isRegister
-                    ? t('Yerel hesap oluştur')
-                    : account
+                    ? accounts.length > 0
+                      ? t('Yeni hesap ekle')
+                      : t('Yerel hesap oluştur')
+                    : accounts.length > 0
                       ? t('Tekrar hoş geldin')
                       : t('Giriş yap')}
                 </h2>
                 <p>
                   {isRegister
-                    ? account
-                      ? t('Hesap bu cihazda kalır; eşitleme açıksa yalnızca şifreli kopya gönderilir.')
+                    ? accounts.length > 0
+                      ? t('Bu cihaza yeni bir hesap ekle.')
                       : t('Bu cihazda ilk hesabı oluşturuyorsun.')
                     : t('Devam etmek için yerel hesabınla giriş yap.')}
                 </p>
@@ -279,93 +349,69 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                 disabled={busy}
               >
                 <UserPlus size={14} />
-                <span>{t('Hesap oluştur')}</span>
+                <span>{accounts.length > 0 ? t('Hesap ekle') : t('Hesap oluştur')}</span>
               </button>
             </div>
 
-            {!isRegister && account ? (
-              <div className="auth-account">
-                <AccountAvatar account={account} className="auth-avatar" />
-                <span className="auth-account-text">
-                  <strong>{account.name}</strong>
-                  <small dir="ltr">{account.email}</small>
-                </span>
-                <span className="auth-account-tag">{t('Yerel hesap')}</span>
+            {!isRegister && accounts.length > 0 && !resetOpen ? (
+              <div className="auth-accounts">
+                <div className="auth-accounts-head">
+                  <span>{t('Bu cihazdaki hesaplar')}</span>
+                  <small>{t('Giriş yapmak istediğin hesabı seç.')}</small>
+                </div>
+                <div className="auth-account-list">
+                  {accounts.map((item) => {
+                    const active = item.email.toLowerCase() === email.trim().toLowerCase();
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`auth-account-chip ${active ? 'is-active' : ''}`}
+                        onClick={() => chooseAccount(item)}
+                        disabled={busy || importBusy}
+                      >
+                        <AccountAvatar account={item} className="auth-account-chip-avatar" />
+                        <span className="auth-account-chip-text">
+                          <strong>{item.name}</strong>
+                          <small dir="ltr">{item.email}</small>
+                        </span>
+                        {active ? <Check size={15} className="auth-account-chip-check" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             ) : null}
 
-            {!resetOpen && !isRegister && !account ? (
-              <div className="auth-empty">
-                <span className="auth-empty-icon">
-                  <LogIn size={18} />
-                </span>
-                <h3>{t('Bu cihazda kayıtlı yerel hesap yok.')}</h3>
-                <p>
-                  {t(
-                    'Giriş için önce bu cihazda bir hesap oluşturman gerekir. Dilersen hesap oluşturmadan da devam edebilirsin.',
-                  )}
-                </p>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => switchMode('register')}
-                  disabled={busy}
-                >
-                  <UserPlus size={16} />
-                  <span>{t('Hesap oluştur')}</span>
-                </button>
-                <button type="button" className="auth-empty-link" onClick={onGuest} disabled={busy}>
-                  {t('Hesap oluşturmadan devam et')}
-                </button>
-              </div>
-            ) : !resetOpen && isRegister && account ? (
-              <div className="auth-empty">
-                <span className="auth-empty-icon">
-                  <ShieldCheck size={18} />
-                </span>
-                <h3>{t('Bu cihazda zaten bir yerel hesap var.')}</h3>
-                <p>
-                  {t(
-                    'Aynı cihazda ikinci bir hesap oluşturulamaz. Mevcut hesabınla giriş yapabilirsin.',
-                  )}
-                </p>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => switchMode('login')}
-                  disabled={busy}
-                >
+            {!isRegister && accounts.length === 0 && !resetOpen ? (
+              <div className="auth-note">
+                <span className="auth-note-icon">
                   <LogIn size={16} />
-                  <span>{t('Giriş yap')}</span>
-                </button>
-                <button
-                  type="button"
-                  className="auth-empty-link"
-                  onClick={() => {
-                    setMode('login');
-                    setResetOpen(true);
-                    setError(null);
-                    setPassword('');
-                  }}
-                  disabled={busy}
-                >
-                  {t('Giriş kilidini sıfırla')}
-                </button>
+                </span>
+                <div>
+                  <strong>{t('Bu cihazda henüz hesap yok.')}</strong>
+                  <p>
+                    {t('Başka bir cihazdaki hesabı içe aktar veya yeni bir hesap oluştur.')}
+                  </p>
+                </div>
               </div>
-            ) : resetOpen ? (
+            ) : null}
+
+            {resetOpen ? (
               <div className="auth-reset">
                 <span className="auth-reset-icon">
                   <AlertTriangle size={18} />
                 </span>
                 <h3>{t('Giriş kilidini sıfırla')}</h3>
+                {email ? (
+                  <strong className="auth-reset-target" dir="ltr">
+                    {email}
+                  </strong>
+                ) : null}
                 <p>
-                  {IS_TRAY
-                    ? t(
-                        'Bu uygulamada e-posta veya sunucu yok; şifre kurtarma yapılamaz. Sıfırlarsan giriş kilidi kaldırılır, çalışma alanı verilerin silinmez ve yeni bir hesap oluşturursun.',
-                      )
-                    : t(
-                        'Bu tarayıcıda e-posta veya sunucu yok; şifre kurtarma yapılamaz. Sıfırlarsan giriş kilidi kaldırılır, çalışma alanı verilerin silinmez ve yeni bir hesap oluşturursun.',
-                      )}
+                  {t(
+                    'Bu cihazda e-posta veya sunucu yok; şifre kurtarma yapılamaz. Sıfırlarsan yalnızca bu hesabın giriş kaydı bu cihazdan silinir. Çalışma alanı verileri korunur.',
+                  )}
                 </p>
                 {errorBox}
                 <div className="auth-reset-actions">
@@ -380,7 +426,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                     {t('Vazgeç')}
                   </button>
                   <button type="button" className="btn btn-danger" onClick={resetAccount}>
-                    {t('Hesabı sıfırla')}
+                    {t('Hesabı kaldır')}
                   </button>
                 </div>
               </div>
@@ -514,6 +560,12 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                   </span>
                 </label>
 
+                {notice ? (
+                  <p className="auth-notice" role="status">
+                    <Check size={15} />
+                    <span>{translateMessage(language, notice)}</span>
+                  </p>
+                ) : null}
                 {errorBox}
 
                 <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>
@@ -537,7 +589,37 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
               </form>
             )}
 
-            {!isRegister && account && !resetOpen ? (
+            {!resetOpen ? (
+              <div className="auth-import">
+                <button
+                  type="button"
+                  className="auth-import-btn"
+                  onClick={() => importRef.current?.click()}
+                  disabled={busy || importBusy}
+                >
+                  {importBusy ? (
+                    <Loader2 size={14} className="auth-spin" />
+                  ) : (
+                    <FileJson size={14} />
+                  )}
+                  <span>{t('Hesap dosyası içe aktar')}</span>
+                </button>
+                <small>{t('Başka bir cihazdaki hesabı bu cihaza ekle.')}</small>
+                <input
+                  ref={importRef}
+                  type="file"
+                  accept="application/json,.json"
+                  hidden
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = '';
+                    if (file) void importFile(file);
+                  }}
+                />
+              </div>
+            ) : null}
+
+            {!isRegister && accounts.length > 0 && !resetOpen ? (
               <div className="auth-switch">
                 <button
                   type="button"
@@ -545,6 +627,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                   onClick={() => {
                     setResetOpen(true);
                     setError(null);
+                    setNotice(null);
                     setPassword('');
                   }}
                 >
@@ -553,7 +636,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
               </div>
             ) : null}
 
-            {!resetOpen && (isRegister || Boolean(account)) ? (
+            {!resetOpen ? (
               <div className="auth-guest">
                 <button type="button" className="auth-guest-btn" onClick={onGuest} disabled={busy}>
                   <ArrowRight size={14} />

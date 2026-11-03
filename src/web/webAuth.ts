@@ -1,4 +1,12 @@
+import {
+  claimLegacyWorkspace,
+  getWorkspaceScope,
+  releaseLegacyWorkspace,
+  setWorkspaceScope,
+} from './workspaceScope';
+
 export const AUTH_STORAGE_KEY = 'ezwin.hub.web.auth.v1';
+export const ACCOUNTS_STORAGE_KEY = 'ezwin.hub.web.accounts.v1';
 export const SESSION_STORAGE_KEY = 'ezwin.hub.web.session.v1';
 export const GUEST_STORAGE_KEY = 'ezwin.hub.web.guest.v1';
 export const GUEST_AVATAR_KEY = 'ezwin.hub.web.guestAvatar.v1';
@@ -14,6 +22,8 @@ const TAB_SESSION_MS = 24 * 60 * 60 * 1000;
 const REMEMBER_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u;
 const STORAGE_ERROR = 'Tarayıcı depolamasına erişilemiyor. Gizli mod veya site verisi engeli olabilir.';
+const ACCOUNT_BUNDLE_KIND = 'orbita-account';
+const ACCOUNT_BUNDLE_VERSION = 1;
 
 export interface LocalAccount {
   id: string;
@@ -210,25 +220,68 @@ function normalizeStoredAccount(raw: unknown): StoredAccount | null {
   };
 }
 
-function readAccount(): StoredAccount | null {
-  const raw = readStorage(localStorage, AUTH_STORAGE_KEY);
-  if (!raw) return null;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return null;
+function normalizeAccountList(raw: unknown): StoredAccount[] {
+  if (!isRecord(raw) || !Array.isArray(raw.accounts)) return [];
+  const seen = new Set<string>();
+  const accounts: StoredAccount[] = [];
+  for (const entry of raw.accounts) {
+    const account = normalizeStoredAccount(entry);
+    if (!account) continue;
+    const key = account.id || normalizeEmail(account.email);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    accounts.push(account);
   }
-  const source = isRecord(parsed) && isRecord(parsed.account) ? parsed.account : parsed;
-  return normalizeStoredAccount(source);
+  return accounts;
 }
 
-function writeAccount(account: StoredAccount): void {
+function readAccounts(): StoredAccount[] {
+  const raw = readStorage(localStorage, ACCOUNTS_STORAGE_KEY);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (isRecord(parsed) && Array.isArray(parsed.accounts)) {
+        return normalizeAccountList(parsed);
+      }
+    } catch {
+      /* fall back to the legacy single-account record */
+    }
+  }
+
+  const legacy = readStorage(localStorage, AUTH_STORAGE_KEY);
+  if (!legacy) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(legacy);
+  } catch {
+    return [];
+  }
+  const source = isRecord(parsed) && isRecord(parsed.account) ? parsed.account : parsed;
+  const account = normalizeStoredAccount(source);
+  if (!account) return [];
+  try {
+    writeAccounts([account]);
+    claimLegacyWorkspace(account.id);
+    if (getWorkspaceScope() === 'local') setWorkspaceScope(account.id);
+    removeStorage(localStorage, AUTH_STORAGE_KEY);
+  } catch {
+    /* keep reading the legacy record if migration cannot be persisted */
+  }
+  return [account];
+}
+
+function writeAccounts(accounts: StoredAccount[]): void {
   writeStorage(
     localStorage,
-    AUTH_STORAGE_KEY,
-    JSON.stringify({ version: 1, account }),
-    'Yerel hesap kaydedilemedi. Tarayıcı depolamasını kontrol et.',
+    ACCOUNTS_STORAGE_KEY,
+    JSON.stringify({ version: 1, accounts }),
+    'Yerel hesaplar kaydedilemedi. Tarayıcı depolamasını kontrol et.',
+  );
+}
+
+function sortAccounts(accounts: StoredAccount[]): StoredAccount[] {
+  return [...accounts].sort(
+    (a, b) => (b.lastLoginAt ?? 0) - (a.lastLoginAt ?? 0) || b.createdAt - a.createdAt,
   );
 }
 
@@ -245,14 +298,6 @@ function parseSession(raw: string | null): StoredSession | null {
   const expiresAt = typeof parsed.expiresAt === 'number' ? parsed.expiresAt : 0;
   if (!accountId || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) return null;
   return { version: 1, accountId, expiresAt, remember: Boolean(parsed.remember) };
-}
-
-function readSession(accountId: string): StoredSession | null {
-  const persistent = parseSession(readStorage(localStorage, SESSION_STORAGE_KEY));
-  if (persistent && persistent.accountId === accountId) return persistent;
-  const tab = parseSession(readStorage(sessionStorage, SESSION_STORAGE_KEY));
-  if (tab && tab.accountId === accountId) return tab;
-  return null;
 }
 
 function clearSessions(): void {
@@ -287,34 +332,51 @@ function validateRegistration(input: RegisterInput): void {
   }
 }
 
+export function getLocalAccounts(): LocalAccount[] {
+  return sortAccounts(readAccounts()).map(toPublic);
+}
+
 export function getLocalAccount(): LocalAccount | null {
-  const account = readAccount();
-  return account ? toPublic(account) : null;
+  const accounts = readAccounts();
+  if (!accounts.length) return null;
+  const scope = getWorkspaceScope();
+  const scoped = accounts.find((account) => account.id === scope);
+  return toPublic(scoped ?? sortAccounts(accounts)[0]);
 }
 
 export function hasLocalAccount(): boolean {
-  return readAccount() !== null;
+  return readAccounts().length > 0;
 }
 
 export function getActiveSession(): AuthSession | null {
-  const stored = readAccount();
+  const accounts = readAccounts();
+  if (!accounts.length) {
+    clearSessions();
+    return null;
+  }
+  const persistent = parseSession(readStorage(localStorage, SESSION_STORAGE_KEY));
+  const tab = parseSession(readStorage(sessionStorage, SESSION_STORAGE_KEY));
+  const candidate = persistent ?? tab;
+  if (!candidate) return null;
+  const stored = accounts.find((account) => account.id === candidate.accountId);
   if (!stored) {
     clearSessions();
     return null;
   }
-  const session = readSession(stored.id);
-  if (!session) return null;
+  setWorkspaceScope(stored.id);
   return {
     account: toPublic(stored),
-    session: { remember: session.remember, expiresAt: session.expiresAt },
+    session: { remember: candidate.remember, expiresAt: candidate.expiresAt },
   };
 }
 
 export async function registerLocalAccount(input: RegisterInput): Promise<AuthSession> {
   assertCrypto();
   validateRegistration(input);
-  if (readAccount()) {
-    throw new Error('Bu cihazda zaten bir yerel hesap var.');
+  const accounts = readAccounts();
+  const email = normalizeEmail(input.email);
+  if (accounts.some((account) => normalizeEmail(account.email) === email)) {
+    throw new Error('Bu e-posta ile kayıtlı bir hesap var. Giriş yapabilirsin.');
   }
 
   const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -329,7 +391,7 @@ export async function registerLocalAccount(input: RegisterInput): Promise<AuthSe
   const account: StoredAccount = {
     id: createId(),
     name: input.name.trim(),
-    email: normalizeEmail(input.email),
+    email,
     avatar: null,
     salt: toBase64(salt),
     hash: toBase64(hash),
@@ -338,16 +400,24 @@ export async function registerLocalAccount(input: RegisterInput): Promise<AuthSe
     createdAt: now,
     lastLoginAt: now,
   };
-  writeAccount(account);
+  writeAccounts([...accounts, account]);
+  if (accounts.length === 0) claimLegacyWorkspace(account.id);
   const session = createSession(account.id, input.remember);
+  setWorkspaceScope(account.id);
   return { account: toPublic(account), session };
 }
 
 export async function loginLocalAccount(input: LoginInput): Promise<AuthSession> {
   assertCrypto();
-  const stored = readAccount();
+  const accounts = readAccounts();
+  if (!accounts.length) {
+    throw new Error('Bu cihazda kayıtlı hesap yok.');
+  }
+
+  const email = normalizeEmail(input.email);
+  const stored = accounts.find((account) => normalizeEmail(account.email) === email);
   if (!stored) {
-    throw new Error('Bu cihazda kayıtlı yerel hesap yok.');
+    throw new Error('E-posta veya şifre hatalı.');
   }
 
   let derived: Uint8Array;
@@ -357,15 +427,14 @@ export async function loginLocalAccount(input: LoginInput): Promise<AuthSession>
     throw new Error('Tarayıcıda güvenli kriptografi kullanılamıyor.');
   }
 
-  const passwordOk = equalBytes(derived, fromBase64(stored.hash));
-  const emailOk = normalizeEmail(input.email) === normalizeEmail(stored.email);
-  if (!emailOk || !passwordOk) {
+  if (!equalBytes(derived, fromBase64(stored.hash))) {
     throw new Error('E-posta veya şifre hatalı.');
   }
 
   stored.lastLoginAt = Date.now();
-  writeAccount(stored);
+  writeAccounts(accounts);
   const session = createSession(stored.id, input.remember);
+  setWorkspaceScope(stored.id);
   return { account: toPublic(stored), session };
 }
 
@@ -374,25 +443,129 @@ export function logoutLocalAccount(): void {
 }
 
 export function updateLocalAccountAvatar(avatar: string | null): LocalAccount {
-  const stored = readAccount();
+  const accounts = readAccounts();
+  const scope = getWorkspaceScope();
+  const stored = accounts.find((account) => account.id === scope);
   if (!stored) {
-    throw new Error('Bu cihazda kayıtlı yerel hesap yok.');
+    throw new Error('Bu cihazda kayıtlı hesap yok.');
   }
   if (avatar !== null && !normalizeAvatar(avatar)) {
     throw new Error('Görsel kaydedilemedi.');
   }
   stored.avatar = avatar === null ? null : normalizeAvatar(avatar);
-  writeAccount(stored);
+  writeAccounts(accounts);
   return toPublic(stored);
 }
 
-export function resetLocalAccount(): void {
-  try {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-  } catch {
-    throw new Error(STORAGE_ERROR);
+export function resetLocalAccount(email?: string): void {
+  const accounts = readAccounts();
+  const targetEmail = email ? normalizeEmail(email) : '';
+  const scope = getWorkspaceScope();
+  const target = targetEmail
+    ? accounts.find((account) => normalizeEmail(account.email) === targetEmail)
+    : accounts.find((account) => account.id === scope) ?? accounts[0];
+  if (!target) {
+    throw new Error(
+      targetEmail ? 'Bu e-posta ile kayıtlı hesap yok.' : 'Bu cihazda kayıtlı hesap yok.',
+    );
   }
+  const remaining = accounts.filter((account) => account.id !== target.id);
+  writeAccounts(remaining);
+  if (remaining.length === 0) releaseLegacyWorkspace(target.id);
   clearSessions();
+  setWorkspaceScope('local');
+}
+
+export interface AccountBundle {
+  app: 'orbita';
+  kind: 'orbita-account';
+  version: number;
+  exportedAt: string;
+  account: {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string | null;
+    salt: string;
+    hash: string;
+    iterations: number;
+    color: string;
+    createdAt: number;
+  };
+}
+
+export function exportAccountBundle(): { fileName: string; text: string; account: LocalAccount } {
+  const accounts = readAccounts();
+  const scope = getWorkspaceScope();
+  const stored = accounts.find((account) => account.id === scope) ?? sortAccounts(accounts)[0];
+  if (!stored) {
+    throw new Error('Bu cihazda kayıtlı hesap yok.');
+  }
+  const bundle: AccountBundle = {
+    app: 'orbita',
+    kind: ACCOUNT_BUNDLE_KIND,
+    version: ACCOUNT_BUNDLE_VERSION,
+    exportedAt: new Date().toISOString(),
+    account: {
+      id: stored.id,
+      name: stored.name,
+      email: stored.email,
+      avatar: stored.avatar,
+      salt: stored.salt,
+      hash: stored.hash,
+      iterations: stored.iterations,
+      color: stored.color,
+      createdAt: stored.createdAt,
+    },
+  };
+  const slug = stored.email.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '') || 'hesap';
+  return {
+    fileName: `orbita-hesap-${slug}.json`,
+    text: JSON.stringify(bundle, null, 2),
+    account: toPublic(stored),
+  };
+}
+
+export function importAccountBundle(text: string): LocalAccount {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('Hesap dosyası okunamadı.');
+  }
+  if (
+    !isRecord(parsed) ||
+    parsed.kind !== ACCOUNT_BUNDLE_KIND ||
+    typeof parsed.version !== 'number' ||
+    parsed.version > ACCOUNT_BUNDLE_VERSION ||
+    !isRecord(parsed.account)
+  ) {
+    throw new Error('Bu dosya geçerli bir Orbita hesap dosyası değil.');
+  }
+  const account = normalizeStoredAccount(parsed.account);
+  if (!account) {
+    throw new Error('Hesap dosyası geçersiz veya eksik.');
+  }
+  const accounts = readAccounts();
+  const sameId = accounts.find((item) => item.id === account.id);
+  if (sameId) {
+    if (sameId.hash === account.hash && sameId.salt === account.salt) {
+      return toPublic(sameId);
+    }
+    throw new Error('Bu hesap kimliği başka bir hesapla çakışıyor.');
+  }
+  const sameEmail = accounts.find(
+    (item) => normalizeEmail(item.email) === normalizeEmail(account.email),
+  );
+  if (sameEmail) {
+    if (sameEmail.hash === account.hash && sameEmail.salt === account.salt) {
+      return toPublic(sameEmail);
+    }
+    throw new Error('Bu e-posta bu cihazda farklı bir hesapla kayıtlı.');
+  }
+  account.lastLoginAt = null;
+  writeAccounts([...accounts, account]);
+  return toPublic(account);
 }
 
 export function hasGuestSession(): boolean {

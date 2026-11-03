@@ -9,7 +9,7 @@ Premium kurulum sayfası: [orbita.wasmer.app/indir](https://orbita.wasmer.app/in
 ## Web ve telefon
 
 1. [orbita.wasmer.app](https://orbita.wasmer.app) adresini aç.
-2. Yerel hesap oluştur, giriş yap veya hesap oluşturmadan devam et.
+2. Hesabını seç, giriş yap veya hesap oluşturmadan devam et. Aynı cihaza birden fazla hesap eklenebilir; başka bir cihazdaki hesap, Ayarlar > **Hesabı dışa aktar** ile taşınabilir.
 3. Telefonda tarayıcı menüsünden **Ana ekrana ekle** seçeneğiyle PWA olarak kur.
 
 Web verileri tarayıcıda kalır. Cihazlar arasında ortak veri için Ayarlar > **Cihaz eşitleme** bölümünden eşitleme kodu oluştur ve aynı kodu diğer cihazlarda gir.
@@ -18,7 +18,7 @@ Web verileri tarayıcıda kalır. Cihazlar arasında ortak veri için Ayarlar > 
 
 | | |
 | --- | --- |
-| Dosya | `Orbita-Setup-2.0.1.exe` |
+| Dosya | `Orbita-Setup-2.1.0.exe` |
 | İşletim sistemi | Windows 10 / 11, 64 bit |
 | Yetki | Yönetici izni istemez (kullanıcı klasörüne kurulur) |
 | Kurulum yeri | `%LOCALAPPDATA%\Programs\Orbita` |

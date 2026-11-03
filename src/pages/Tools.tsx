@@ -21,6 +21,7 @@ import {
   toExpressionString,
 } from '../lib/calculator';
 import { crossRate, formatRate, rateDateLabel } from '../lib/rates';
+import { scopedStorageKey } from '../web/workspaceScope';
 import type { Currency } from '../types';
 
 const HISTORY_KEY = 'ezwin.calc.history';
@@ -34,7 +35,7 @@ interface HistoryItem {
 
 function loadHistory(): HistoryItem[] {
   try {
-    const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    const raw = JSON.parse(localStorage.getItem(scopedStorageKey(HISTORY_KEY)) || '[]');
     if (!Array.isArray(raw)) return [];
     return raw
       .filter(
@@ -70,7 +71,7 @@ function Calculator() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      localStorage.setItem(scopedStorageKey(HISTORY_KEY), JSON.stringify(history));
     } catch {
       return;
     }

@@ -1,6 +1,7 @@
 import { tGlobal } from '../i18n/core';
 import { PRODUCT_NAME } from '../lib/product';
 import { normalizeLanguage } from '../i18n/languages';
+import { scopedStorageKey } from './workspaceScope';
 import type {
   AppData,
   Asset,
@@ -26,7 +27,7 @@ const SAVED_AT_KEY = 'ezwin.hub.web.savedAt.v1';
 const RATES_KEY = 'ezwin.hub.web.rates.v1';
 const RATES_URL = 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,EUR';
 const RATES_MAX_AGE = 15 * 60 * 1000;
-const WEB_VERSION = '2.0.1';
+const WEB_VERSION = '2.1.0';
 
 const COMPANY_STATUSES: CompanyStatus[] = ['active', 'maintenance', 'paused'];
 const COMPANY_CATEGORIES: CompanyCategory[] = [
@@ -61,7 +62,7 @@ export function onBrowserSave(listener: SaveListener): () => void {
 
 export function browserSavedAt(): number {
   try {
-    const value = Number(localStorage.getItem(SAVED_AT_KEY));
+    const value = Number(localStorage.getItem(scopedStorageKey(SAVED_AT_KEY)));
     return Number.isFinite(value) ? value : 0;
   } catch {
     return 0;
@@ -77,7 +78,7 @@ function reportSave(ok: boolean): void {
   if (ok) {
     at = Date.now();
     try {
-      localStorage.setItem(SAVED_AT_KEY, String(at));
+      localStorage.setItem(scopedStorageKey(SAVED_AT_KEY), String(at));
     } catch {
       /* the timestamp is cosmetic; the state write already succeeded */
     }
@@ -479,8 +480,9 @@ export function normalizeState(raw: unknown): AppData {
 
 function readState(): AppData {
   let raw: string | null = null;
+  const key = scopedStorageKey(STORAGE_KEY);
   try {
-    raw = localStorage.getItem(STORAGE_KEY);
+    raw = localStorage.getItem(key);
   } catch {
     throw new Error('Tarayıcı depolamasına erişilemiyor. Gizli mod veya site verisi engeli olabilir.');
   }
@@ -489,8 +491,8 @@ function readState(): AppData {
     return normalizeState(JSON.parse(raw));
   } catch {
     try {
-      localStorage.setItem(`${STORAGE_KEY}.bozuk.${Date.now()}`, raw);
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(`${key}.bozuk.${Date.now()}`, raw);
+      localStorage.removeItem(key);
     } catch {
       /* ignore recovery failure */
     }
@@ -500,7 +502,7 @@ function readState(): AppData {
 
 function writeState(state: AppData): AppData {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(scopedStorageKey(STORAGE_KEY), JSON.stringify(state));
   } catch {
     reportSave(false);
     throw new Error('Tarayıcı depolaması dolu. JSON yedeği alıp eski kayıtları sil.');
@@ -511,7 +513,7 @@ function writeState(state: AppData): AppData {
 
 export function checkpointBrowserSave(): void {
   try {
-    if (!localStorage.getItem(STORAGE_KEY)) return;
+    if (!localStorage.getItem(scopedStorageKey(STORAGE_KEY))) return;
     writeState(readState());
   } catch {
     /* writeState already surfaced the failure */
@@ -690,9 +692,9 @@ export function setStoredLanguage(language: LanguageCode): void {
 
 export function clearAllData(): void {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(scopedStorageKey(STORAGE_KEY));
     localStorage.removeItem('ezwin.hub.tray.v1');
-    localStorage.removeItem(SAVED_AT_KEY);
+    localStorage.removeItem(scopedStorageKey(SAVED_AT_KEY));
   } catch {
     throw new Error('Tarayıcı verisi temizlenemedi.');
   }
@@ -707,7 +709,7 @@ export function clearAllData(): void {
 
 export function storageBytes(): number {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) ?? '';
+    const raw = localStorage.getItem(scopedStorageKey(STORAGE_KEY)) ?? '';
     return new Blob([raw]).size;
   } catch {
     return 0;

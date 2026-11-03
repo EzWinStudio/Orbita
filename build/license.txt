@@ -1,5 +1,5 @@
 ORBITA — SON KULLANICI LİSANS SÖZLEŞMESİ
-Sürüm 2.0 · © 2026 EZWIN. Tüm hakları saklıdır.
+Sürüm 2.1 · © 2026 EZWIN. Tüm hakları saklıdır.
 
 Bu yazılımı (bundan sonra "Uygulama") kurarak ve kullanarak aşağıdaki koşulları kabul etmiş olursun.
 
@@ -11,7 +11,7 @@ Bu yazılımı (bundan sonra "Uygulama") kurarak ve kullanarak aşağıdaki koş
 2. HESAP VE VERİ
    Uygulama yerel olarak çalışır. Hesap bilgileri, şirket kayıtları, müzik listen,
    çeviri geçmişin ve kanal bağlantıların bu bilgisayarda saklanır.
-   - Şifreler tek yönlü scrypt özeti olarak tutulur, düz metin olarak saklanmaz.
+   - Şifreler tek yönlü PBKDF2-SHA256 özeti olarak tutulur, düz metin olarak saklanmaz.
    - Erişim jetonları Windows DPAPI ile şifrelenir; yalnızca aynı Windows
      kullanıcısı tarafından çözülebilir.
    - Verilerin yedeğini almak ve saklamak senin sorumluluğundadır.

@@ -1,7 +1,7 @@
 [package]
 name = "ezwinstudio/ezwin-hub"
-version = "0.4.4"
-description = "EZWIN HUB — browser-based local company command center"
+version = "0.4.9"
+description = "Orbita — browser-based local company command center (legacy address)"
 
 [dependencies]
 "wasmer/static-web-server" = "^1"

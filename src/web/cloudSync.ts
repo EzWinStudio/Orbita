@@ -1,5 +1,6 @@
 import type { AppData, Settings } from '../types';
 import { applySyncedState, onBrowserSave, readBrowserState } from './browserApi';
+import { scopedStorageKey } from './workspaceScope';
 import { PRODUCT_NAME } from '../lib/product';
 
 export const SYNC_ORIGIN = 'https://ezwin-hub-sync-qa7ckgs962s.qoder.website';
@@ -80,7 +81,9 @@ export function getSyncStatus(): SyncStatus {
 
 function readConfig(): SyncConfig | null {
   try {
-    const raw = JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null') as Partial<SyncConfig> | null;
+    const raw = JSON.parse(
+      localStorage.getItem(scopedStorageKey(CONFIG_KEY)) || 'null',
+    ) as Partial<SyncConfig> | null;
     if (!raw || typeof raw.code !== 'string' || typeof raw.channelId !== 'string') return null;
     if (!/^[A-Za-z0-9_-]{22,64}$/.test(raw.channelId)) return null;
     return {
@@ -99,7 +102,7 @@ function readConfig(): SyncConfig | null {
 
 function writeConfig(config: SyncConfig): void {
   try {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+    localStorage.setItem(scopedStorageKey(CONFIG_KEY), JSON.stringify(config));
   } catch {
     /* the sync state is best effort; the local app data remains saved */
   }
@@ -331,7 +334,7 @@ function backupLocal(state: AppData): void {
   if (localIsEmpty(state)) return;
   try {
     localStorage.setItem(
-      BACKUP_KEY,
+      scopedStorageKey(BACKUP_KEY),
       JSON.stringify({ at: Date.now(), data: snapshotOf(state) }),
     );
   } catch {
@@ -681,7 +684,7 @@ export async function connectSync(input: string): Promise<{ ok: boolean; error?:
 
 export function disconnectSync(): void {
   try {
-    localStorage.removeItem(CONFIG_KEY);
+    localStorage.removeItem(scopedStorageKey(CONFIG_KEY));
   } catch {
     /* ignore */
   }
