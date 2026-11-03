@@ -1,0 +1,10 @@
+[package]
+name = "ezwinstudio/ezwinmusic"
+version = "0.1.0"
+description = "EzWinMusic — müzik stüdyosu"
+
+[dependencies]
+"wasmer/static-web-server" = "^1"
+
+[fs]
+"/public" = "public"

@@ -1,0 +1,7 @@
+kind: wasmer.io/App.v0
+owner: ezwinstudio
+name: cata-store
+package: .
+env:
+  SERVER_FALLBACK_PAGE: /public/index.html
+app_id: da_KWgIvtQUyOY0

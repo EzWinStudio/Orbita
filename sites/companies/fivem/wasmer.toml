@@ -1,0 +1,10 @@
+[package]
+name = "ezwinstudio/ezwin-fivem"
+version = "0.1.0"
+description = "EzWin FiveM — resmi site"
+
+[dependencies]
+"wasmer/static-web-server" = "^1"
+
+[fs]
+"/public" = "public"

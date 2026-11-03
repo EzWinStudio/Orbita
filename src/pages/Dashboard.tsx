@@ -1,0 +1,828 @@
+import { useMemo, useState } from 'react';
+import {
+  Activity,
+  ArrowUpRight,
+  Bot,
+  Building2,
+  Cable,
+  ChevronRight,
+  Globe2,
+  ListChecks,
+  MessageCircle,
+  Plus,
+  RefreshCw,
+  Server,
+  ShieldCheck,
+  UserPlus,
+  Wallet,
+  Zap,
+} from 'lucide-react';
+import { PageHeader } from '../components/PageHeader';
+import { KpiCard } from '../components/KpiCard';
+import { WebNotice } from '../web/WebNotice';
+import { IS_TRAY, IS_WEB } from '../lib/runtime';
+import { MonthlyBars } from '../components/MonthlyBars';
+import { StatusPill } from '../components/StatusPill';
+import { LinkAvatar, ServiceAvatar } from '../components/BrandAvatar';
+import { CompanyChip } from '../components/CompanyChip';
+import { EmptyState } from '../components/EmptyState';
+import { YoutubeIcon } from '../components/YoutubeIcon';
+import { CompanyModal } from '../modals/CompanyModal';
+import { TaskModal } from '../modals/TaskModal';
+import { useApp, useAppData } from '../store';
+import { useI18n } from '../i18n';
+import { serviceStateLabel, serviceSummary } from '../lib/status';
+import { useBotHints } from '../web/botSecrets';
+import { compactNumber } from '../lib/youtube';
+import type { Page } from '../nav';
+import type { Asset, ServiceState, Task } from '../types';
+import {
+  currentMonthKey,
+  formatMoney,
+  formatLongDate,
+  dueLabel,
+  monthLabel,
+  relativeTime,
+  todayISO,
+} from '../lib/format';
+
+interface DashboardProps {
+  navigate: (page: Page, companyId?: string | null) => void;
+  onOpenPalette: () => void;
+}
+
+const SEVERITY: Record<ServiceState, number> = {
+  offline: 0,
+  degraded: 1,
+  unchecked: 2,
+  online: 3,
+};
+
+const PRIORITY_WEIGHT = { high: 3, med: 2, low: 1 } as const;
+
+export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
+  const data = useAppData();
+  const { actions } = useApp();
+  const { t, locale } = useI18n();
+  const botHints = useBotHints();
+  const [refreshing, setRefreshing] = useState(false);
+  const [companyModalOpen, setCompanyModalOpen] = useState(false);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const currency = data.settings.currency;
+  const monthKey = currentMonthKey();
+  const today = todayISO();
+
+  const companyById = useMemo(
+    () => new Map(data.companies.map((company) => [company.id, company])),
+    [data.companies],
+  );
+
+  const statusOf = (asset: Asset): ServiceState => data.statuses[asset.id]?.state ?? 'unchecked';
+  const lastCheckAt = Object.values(data.statuses).reduce(
+    (latest, status) => Math.max(latest, status.checkedAt),
+    0,
+  );
+
+  const monitoredAssets = data.assets.filter(
+    (asset) =>
+      asset.type === 'website' ||
+      (asset.type === 'discord' && IS_TRAY ? Boolean(botHints[asset.id]) : asset.hasSecret),
+  );
+  const onlineCount = monitoredAssets.filter((asset) => statusOf(asset) === 'online').length;
+  const degradedCount = monitoredAssets.filter((asset) => statusOf(asset) === 'degraded').length;
+  const offlineCount = monitoredAssets.filter((asset) => statusOf(asset) === 'offline').length;
+  const waitingCount = data.assets.filter(
+    (asset) =>
+      asset.type !== 'website' &&
+      !(asset.type === 'discord' && IS_TRAY ? Boolean(botHints[asset.id]) : asset.hasSecret),
+  ).length;
+  const youtubeEvents = data.youtubeEvents.slice(0, 6);
+
+  const monthEntries = data.finance.filter((entry) => entry.date.startsWith(monthKey));
+  const income = monthEntries.filter((entry) => entry.kind === 'income').reduce((sum, entry) => sum + entry.amount, 0);
+  const expense = monthEntries.filter((entry) => entry.kind === 'expense').reduce((sum, entry) => sum + entry.amount, 0);
+  const net = income - expense;
+
+  const monthByCompany = useMemo(
+    () =>
+      data.companies
+        .map((company) => {
+          const entries = monthEntries.filter((entry) => entry.companyId === company.id);
+          const companyIncome = entries
+            .filter((entry) => entry.kind === 'income')
+            .reduce((sum, entry) => sum + entry.amount, 0);
+          const companyExpense = entries
+            .filter((entry) => entry.kind === 'expense')
+            .reduce((sum, entry) => sum + entry.amount, 0);
+          return { company, net: companyIncome - companyExpense, count: entries.length };
+        })
+        .filter((row) => row.count > 0)
+        .sort((a, b) => b.net - a.net),
+    [data.companies, monthEntries],
+  );
+
+  const months = useMemo(() => {
+    const keys: string[] = [];
+    for (let i = 5; i >= 0; i -= 1) {
+      const [year, month] = monthKey.split('-').map(Number);
+      const date = new Date(year, month - 1 - i, 1);
+      keys.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+    }
+    return keys.map((key) => ({
+      key,
+      label: monthLabel(key, 'short').toLocaleUpperCase(locale),
+      income: data.finance
+        .filter((entry) => entry.kind === 'income' && entry.date.startsWith(key))
+        .reduce((sum, entry) => sum + entry.amount, 0),
+      expense: data.finance
+        .filter((entry) => entry.kind === 'expense' && entry.date.startsWith(key))
+        .reduce((sum, entry) => sum + entry.amount, 0),
+    }));
+  }, [data.finance, monthKey, locale]);
+
+  const openTasks = useMemo(
+    () =>
+      [...data.tasks]
+        .filter((task) => !task.done)
+        .sort((a, b) => {
+          const aDue = a.due ? Date.parse(a.due) : Number.MAX_SAFE_INTEGER;
+          const bDue = b.due ? Date.parse(b.due) : Number.MAX_SAFE_INTEGER;
+          if (aDue !== bDue) return aDue - bDue;
+          return PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority];
+        }),
+    [data.tasks],
+  );
+  const overdueCount = openTasks.filter((task) => task.due && task.due < today).length;
+
+  const listedAssets = IS_WEB ? data.assets : monitoredAssets;
+
+  const sortedAssets = useMemo(
+    () =>
+      [...listedAssets].sort((a, b) => {
+        const diff = SEVERITY[statusOf(a)] - SEVERITY[statusOf(b)];
+        if (diff !== 0) return diff;
+        return a.name.localeCompare(b.name, locale);
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [listedAssets, data.statuses, locale],
+  );
+
+  const links = useMemo(
+    () =>
+      data.companies.flatMap((company) =>
+        company.links.map((link) => ({ ...link, company })),
+      ),
+    [data.companies],
+  );
+
+  const lastChecked = Math.max(0, ...Object.values(data.statuses).map((status) => status.checkedAt));
+
+  const refresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    await actions.refreshMonitor();
+    setRefreshing(false);
+  };
+
+  const toggleTask = async (task: Task) => {
+    if (togglingId) return;
+    setTogglingId(task.id);
+    await actions.updateTask({ id: task.id, done: !task.done });
+    setTogglingId(null);
+  };
+
+  if (data.companies.length === 0) {
+    return (
+      <>
+        <PageHeader
+          eyebrow={t('Komuta merkezi')}
+          title={t('Şirketlerini tek ekrandan yönet')}
+          subtitle={`${formatLongDate(Date.now())} · ${t('Kurulum üç adımda tamamlanır.')}`}
+          actions={
+            <button type="button" className="btn btn-primary" onClick={() => setCompanyModalOpen(true)}>
+              <Plus size={15} /> {t('İlk şirketini ekle')}
+            </button>
+          }
+        />
+        <WebNotice />
+        <div className="onboarding">
+          <section className="card onboarding-steps">
+            <div className="card-header">
+              <div>
+                <h2>{t('Başlangıç planı')}</h2>
+                <p>
+                  {IS_TRAY
+                    ? t('Şirketlerini, görevlerini ve finansını bu uygulamada yönet.')
+                    : IS_WEB
+                      ? t('Şirketlerini, görevlerini ve finansını bu tarayıcıda yönet.')
+                      : t('Gerçek veriler, bağladığın anda akmaya başlar.')}
+                </p>
+              </div>
+              <span className="step-counter">0 / 3</span>
+            </div>
+            <ol className="step-list">
+              <li className="step">
+                <span className="step-index">01</span>
+                <div className="step-text">
+                  <strong>{t('Şirketini tanımla')}</strong>
+                  <span>{t('Renk ve açıklamayla komuta merkezine ekle.')}</span>
+                </div>
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => setCompanyModalOpen(true)}>
+                  {t('Şirket ekle')}
+                </button>
+              </li>
+              <li className="step">
+                <span className="step-index">02</span>
+                <div className="step-text">
+                  <strong>{t('Servis bağla')}</strong>
+                  <span>{t('Discord botu, Pterodactyl paneli veya web sitesi.')}</span>
+                </div>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigate('services')}>
+                  {t('Servislere git')}
+                </button>
+              </li>
+              <li className="step">
+                <span className="step-index">03</span>
+                <div className="step-text">
+                  <strong>{t('Finansı başlat')}</strong>
+                  <span>{t('İlk gelir veya gider kaydını işle.')}</span>
+                </div>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigate('finance')}>
+                  {t('Finans')}
+                </button>
+              </li>
+            </ol>
+            <div className="onboarding-note">
+              <ShieldCheck size={15} />
+              <span>
+                {IS_TRAY
+                  ? t('Veriler bu cihazda saklanır; API anahtarları Windows DPAPI ile şifrelenir.')
+                  : IS_WEB
+                    ? t('Veriler yalnızca bu tarayıcıda saklanır. Sunucu ve bulut yok; yerel hesap bu cihazda kalır.')
+                    : t('API anahtarları Windows DPAPI ile şifrelenir; yalnızca bağladığın servislerin API’lerine gönderilir. Uygulama tek kişiliktir, veriler bu bilgisayarda kalır.')}
+              </span>
+            </div>
+          </section>
+
+          <section className="card connect-panel">
+            <div className="card-header">
+              <div>
+                <h2>{t('Neler bağlanabilir?')}</h2>
+                <p>
+                  {IS_TRAY
+                    ? t('Site ve bot sağlığı arka planda izlenir.')
+                    : IS_WEB
+                      ? t('Servisler envanter olarak listelenir; canlı API kontrolü yapılmaz.')
+                      : t('Üç gerçek entegrasyon, tek kontrol ekranı.')}
+                </p>
+              </div>
+            </div>
+            <div className="connect-item">
+              <span className="connect-icon"><Bot size={17} /></span>
+              <div>
+                <strong>{t('Discord Bot API')}</strong>
+                <span>
+                  {IS_TRAY
+                    ? t('Bot API’si token ile doğrulanır; sunucu listesi ve gecikme görünür.')
+                    : IS_WEB
+                      ? t('Envanter kaydı; canlı bot kontrolü yapılmaz.')
+                      : t('Bot kimliği, sunucu listesi ve API gecikmesi.')}
+                </span>
+              </div>
+            </div>
+            <div className="connect-item">
+              <span className="connect-icon"><Server size={17} /></span>
+              <div>
+                <strong>{t('Pterodactyl Paneli')}</strong>
+                <span>
+                  {IS_TRAY
+                    ? t('Panel envanteri; canlı kontrol bu sürümde yok.')
+                    : IS_WEB
+                      ? t('Envanter kaydı; panel anahtarı saklanmaz.')
+                      : t('Sunucu durumu, CPU, RAM, disk ve çalışma süresi.')}
+                </span>
+              </div>
+            </div>
+            <div className="connect-item">
+              <span className="connect-icon"><Globe2 size={17} /></span>
+              <div>
+                <strong>{t('Web Sitesi İzleme')}</strong>
+                <span>
+                  {IS_TRAY
+                    ? t('Site erişimi arka planda kontrol edilir; SSL ve yanıt süresi izlenir.')
+                    : IS_WEB
+                      ? t('Site kısayolu; canlı erişim kontrolü yapılmaz.')
+                      : t('Erişim, yanıt süresi, hata kodu ve SSL bitişi.')}
+                </span>
+              </div>
+            </div>
+            <div className="connect-footer">
+              <Cable size={15} />
+              {IS_TRAY
+                ? t('Site ve bot sağlığı arka planda izlenir.')
+                : IS_WEB
+                  ? t('Canlı izleme tarayıcı sürümünde kapalı.')
+                  : t('Servisleri bağladıktan sonra otomatik kontrol döngüsü başlar.')}
+            </div>
+          </section>
+        </div>
+        <CompanyModal open={companyModalOpen} onClose={() => setCompanyModalOpen(false)} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <PageHeader
+        eyebrow={
+          IS_WEB
+            ? t('{date} · yerel çalışma alanı', { date: formatLongDate(Date.now()) })
+            : t('{date} · canlı kontrol', { date: formatLongDate(Date.now()) })
+        }
+        title={t('Komuta merkezi')}
+        subtitle={t('{companies} şirket · {services} servis · {tasks} açık görev', {
+          companies: data.companies.length,
+          services: data.assets.length,
+          tasks: openTasks.length,
+        })}
+        actions={
+          <>
+            {!IS_WEB || IS_TRAY ? (
+              <button type="button" className="btn btn-ghost" onClick={() => void refresh()} disabled={refreshing}>
+                <RefreshCw size={15} className={refreshing ? 'spin' : ''} />
+                {refreshing ? t('Kontrol ediliyor…') : t('Yenile')}
+              </button>
+            ) : null}
+            <button type="button" className="btn btn-primary" onClick={onOpenPalette}>
+              <Zap size={15} /> {t('Hızlı işlem')}
+            </button>
+          </>
+        }
+      />
+
+      {IS_WEB ? <WebNotice /> : null}
+
+      <div className="kpi-grid">
+        <KpiCard
+          label={t('Şirketler')}
+          value={data.companies.length}
+          hint={t('{services} servis · {links} hızlı bağlantı', {
+            services: data.assets.length,
+            links: links.length,
+          })}
+          icon={<Building2 size={16} />}
+          footer={<span className="mini-mono">{t('{count} açık görev', { count: openTasks.length })}</span>}
+        />
+        {IS_WEB && !IS_TRAY ? (
+          <KpiCard
+            label={t('Servisler')}
+            value={data.assets.length}
+            hint={
+              IS_TRAY
+                ? t('Site ve bot sağlığı arka planda izlenir.')
+                : t('Canlı izleme tarayıcı sürümünde kapalı.')
+            }
+            icon={<Activity size={16} />}
+            footer={
+              <span className="mini-mono">
+                {IS_TRAY && lastCheckAt
+                  ? t('Son kontrol: {time}', { time: relativeTime(lastCheckAt) })
+                  : IS_TRAY
+                    ? t('İlk kontrol bekleniyor')
+                    : t('Yerel envanter')}
+              </span>
+            }
+          />
+        ) : (
+          <KpiCard
+            label={t('Servis erişilebilirliği')}
+            value={
+              <span className="kpi-inline">
+                {onlineCount}
+                <span className="kpi-sub-value">/{monitoredAssets.length}</span>
+              </span>
+            }
+            hint={
+              monitoredAssets.length
+                ? `${t('{count} dikkat', { count: degradedCount })} · ${t('{count} çalışmıyor', { count: offlineCount })}${
+                    waitingCount ? ` · ${t('{count} anahtar bekliyor', { count: waitingCount })}` : ''
+                  }`
+                : t('Henüz izlenen servis yok')
+            }
+            icon={<Activity size={16} />}
+            tone={offlineCount > 0 ? 'danger' : degradedCount > 0 ? 'amber' : monitoredAssets.length ? 'mint' : 'default'}
+            footer={
+              <span className="mini-mono">
+                {lastChecked
+                  ? t('Son kontrol {time}', { time: relativeTime(lastChecked) })
+                  : t('İlk kontrol bekleniyor')}
+              </span>
+            }
+          />
+        )}
+        <KpiCard
+          label={t('Bu ay net')}
+          value={monthEntries.length ? formatMoney(net, currency) : '—'}
+          hint={
+            monthEntries.length
+              ? t('{income} gelir · {expense} gider', {
+                  income: formatMoney(income, currency),
+                  expense: formatMoney(expense, currency),
+                })
+              : t('Bu ay için kayıt yok')
+          }
+          icon={<Wallet size={16} />}
+          tone={monthEntries.length ? (net >= 0 ? 'mint' : 'danger') : 'default'}
+          footer={<span className="mini-mono">{monthLabel(monthKey)}</span>}
+        />
+        <KpiCard
+          label={t('Açık görev')}
+          value={openTasks.length}
+          hint={
+            overdueCount > 0
+              ? t('{count} görev gecikti', { count: overdueCount })
+              : t('Geciken görev yok')
+          }
+          icon={<ListChecks size={16} />}
+          tone={overdueCount > 0 ? 'amber' : 'default'}
+          footer={
+            <button type="button" className="text-link" onClick={() => navigate('tasks')}>
+              {t('Görevlere git')} <ChevronRight size={12} />
+            </button>
+          }
+        />
+      </div>
+
+      <div className="dash-grid">
+        {!IS_WEB && data.youtubeChannels.length > 0 ? (
+          <section className="card span-12 youtube-overview">
+            <div className="card-header">
+              <div>
+                <h2 className="yt-heading">
+                  <span className="yt-heading-icon">
+                    <YoutubeIcon size={16} />
+                  </span>
+                  {t('YouTube hareketleri')}
+                </h2>
+                <p>
+                  {t('{count} kanal bağlı · yeni yorumlar ve abone artışları', {
+                    count: data.youtubeChannels.length,
+                  })}
+                  {data.youtubeKeys.length === 0 ? ` · ${t('YouTube API anahtarı yok')}` : ''}
+                </p>
+              </div>
+              <button type="button" className="text-link" onClick={() => navigate('companies')}>
+                {t('Şirketleri aç')} <ChevronRight size={12} />
+              </button>
+            </div>
+            <div className="yt-overview-body">
+              <div className="yt-overview-channels">
+                {data.youtubeChannels.map((channel) => {
+                  const company = companyById.get(channel.companyId);
+                  return (
+                    <button
+                      type="button"
+                      className="yt-overview-channel"
+                      key={channel.id}
+                      onClick={() => navigate('companies', channel.companyId)}
+                    >
+                      <span
+                        className="yt-overview-avatar"
+                        style={{ background: `${company?.color ?? '#3ef2b5'}22`, color: company?.color ?? '#3ef2b5' }}
+                      >
+                        {channel.avatar ? (
+                          <img src={channel.avatar} alt="" />
+                        ) : (
+                          channel.title.trim()[0]?.toLocaleUpperCase(locale) ?? '▶'
+                        )}
+                      </span>
+                      <span className="yt-overview-channel-main">
+                        <strong>{channel.title}</strong>
+                        <span>
+                          {company?.name ?? '—'} ·{' '}
+                          {channel.hiddenSubscribers
+                            ? t('Abone gizli')
+                            : t('{count} abone', {
+                                count: compactNumber(channel.subscribers, locale),
+                              })}
+                        </span>
+                      </span>
+                      <span
+                        className={`yt-overview-dot ${
+                          channel.lastError ? 'danger' : channel.lastCheckedAt ? 'ok' : 'idle'
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="yt-overview-feed">
+                <div className="yt-panel-head">
+                  <strong>{t('Son hareketler')}</strong>
+                  <span>{t('Tüm kanallar')}</span>
+                </div>
+                {youtubeEvents.length === 0 ? (
+                  <div className="yt-empty">
+                    <YoutubeIcon size={16} />
+                    <span>{t('Yeni yorumlar ve abone artışları burada görünecek.')}</span>
+                  </div>
+                ) : (
+                  <div className="yt-event-list">
+                    {youtubeEvents.map((event) => (
+                      <button
+                        type="button"
+                        key={event.id}
+                        className="yt-event"
+                        onClick={() => navigate('companies', event.companyId)}
+                      >
+                        <span
+                          className={`yt-event-icon ${event.kind === 'subscriber' ? 'subscriber' : ''}`}
+                        >
+                          {event.kind === 'subscriber' ? (
+                            <UserPlus size={14} />
+                          ) : (
+                            <MessageCircle size={14} />
+                          )}
+                        </span>
+                        <span className="yt-event-main">
+                          <span className="yt-event-title" dir="auto">
+                            {event.kind === 'subscriber'
+                              ? t('{count} yeni abone', { count: event.count ?? 0 })
+                              : event.author ?? t('Yeni yorum')}
+                            <span className="yt-event-time">{relativeTime(event.at)}</span>
+                          </span>
+                          <span className="yt-event-text" dir="auto">
+                            {event.text ?? event.videoTitle ?? event.channelTitle}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        ) : null}
+        <section className="card span-7">
+          <div className="card-header">
+            <div>
+              <h2>{t('Servis sağlığı')}</h2>
+              <p>
+                {IS_TRAY
+                  ? t('Site ve bot sağlığı arka planda izlenir.')
+                  : IS_WEB
+                    ? t('Servisler envanter olarak listelenir; canlı API kontrolü yapılmaz.')
+                    : t('Discord, panel ve site kontrolleri gerçek zamanlı.')}
+              </p>
+            </div>
+            <button type="button" className="text-link" onClick={() => navigate('services')}>
+              {t('Tümünü gör')} <ChevronRight size={12} />
+            </button>
+          </div>
+
+          {listedAssets.length === 0 ? (
+            <EmptyState
+              compact
+              icon={<Activity size={18} />}
+              title={t('Henüz izlenen servis yok')}
+              description={
+                IS_TRAY
+                  ? t('Site ve Discord botları arka planda kontrol edilir; Pterodactyl ve Gmail canlı izlenmez.')
+                  : IS_WEB
+                    ? t('Servisler envanter olarak listelenir; canlı API kontrolü yapılmaz.')
+                    : t('Bir Discord botu, Pterodactyl paneli veya web sitesi bağla; sağlık verisi burada başlasın.')
+              }
+              action={
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigate('services')}>
+                  <Plus size={14} /> {t('Servis bağla')}
+                </button>
+              }
+            />
+          ) : (
+            <div className="service-list">
+              {sortedAssets.slice(0, 6).map((asset) => {
+                const status = data.statuses[asset.id];
+                const state = statusOf(asset);
+                const company = companyById.get(asset.companyId);
+                const hasSecret =
+                  asset.type === 'discord' && IS_WEB
+                    ? Boolean(botHints[asset.id])
+                    : asset.hasSecret;
+                return (
+                  <button
+                    type="button"
+                    key={asset.id}
+                    className="service-row"
+                    onClick={() => navigate('services')}
+                  >
+                    <span className={`service-state-dot state-${state}`} />
+                    <ServiceAvatar asset={asset} company={company} />
+                    <span className="service-main">
+                      <span className="service-name">{asset.name}</span>
+                      <span className="service-meta">
+                        <CompanyChip company={company} />
+                        <span className="meta-sep">·</span>
+                        {serviceSummary(asset, status, t, hasSecret)}
+                      </span>
+                    </span>
+                    <span className="service-side">
+                      <StatusPill
+                        state={state}
+                        label={t(serviceStateLabel(asset, state, hasSecret))}
+                        subtle
+                      />
+                      <span className="service-time">
+                        {status ? relativeTime(status.checkedAt) : '—'}
+                        {status?.latencyMs != null ? ` · ${status.latencyMs} ms` : ''}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="card span-5 finance-card">
+          <div className="card-header">
+            <div>
+              <h2>{t('Finans')}</h2>
+              <p>{monthLabel(monthKey)} · {currency}</p>
+            </div>
+            <button type="button" className="text-link" onClick={() => navigate('finance')}>
+              {t('Finans')} <ChevronRight size={12} />
+            </button>
+          </div>
+          <div className="finance-summary">
+            <div>
+              <span className="finance-label">{t('Net')}</span>
+              <strong className={`finance-net ${net < 0 ? 'negative' : ''}`}>
+                {monthEntries.length ? formatMoney(net, currency) : '—'}
+              </strong>
+            </div>
+            <div className="finance-split">
+              <span><i className="dot-income" /> {t('Gelir')} <b>{formatMoney(income, currency)}</b></span>
+              <span><i className="dot-expense" /> {t('Gider')} <b>{formatMoney(expense, currency)}</b></span>
+            </div>
+          </div>
+          <MonthlyBars months={months} currency={currency} compact />
+          {monthByCompany.length > 0 ? (
+            <div className="mini-breakdown">
+              <div className="mini-breakdown-head">
+                <span>{t('Şirket dağılımı')}</span>
+                <span>{t('Net')}</span>
+              </div>
+              {monthByCompany.slice(0, 3).map((row) => (
+                <div className="mini-breakdown-row" key={row.company.id}>
+                  <CompanyChip company={row.company} />
+                  <strong className={row.net < 0 ? 'text-danger' : ''}>
+                    {formatMoney(row.net, currency)}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </section>
+
+        <section className="card span-7">
+          <div className="card-header">
+            <div>
+              <h2>{t('Açık görevler')}</h2>
+              <p>
+                {overdueCount > 0
+                  ? t('{count} geciken görev öncelikli.', { count: overdueCount })
+                  : t('Tarihe göre sıralı.')}
+              </p>
+            </div>
+            <div className="card-header-actions">
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => {
+                  setEditingTask(null);
+                  setTaskModalOpen(true);
+                }}
+                aria-label={t('Görev ekle')}
+              >
+                <Plus size={15} />
+              </button>
+              <button type="button" className="text-link" onClick={() => navigate('tasks')}>
+                {t('Tümü')} <ChevronRight size={12} />
+              </button>
+            </div>
+          </div>
+
+          {openTasks.length === 0 ? (
+            <EmptyState
+              compact
+              icon={<ListChecks size={18} />}
+              title={t('Açık görev yok')}
+              description={t('Operasyon adımlarını görevlere böl; gecikenler burada öne çıksın.')}
+              action={
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    setEditingTask(null);
+                    setTaskModalOpen(true);
+                  }}
+                >
+                  <Plus size={14} /> {t('Görev ekle')}
+                </button>
+              }
+            />
+          ) : (
+            <div className="task-list">
+              {openTasks.slice(0, 5).map((task) => {
+                const due = dueLabel(task.due);
+                const company = task.companyId ? companyById.get(task.companyId) : null;
+                return (
+                  <div className="task-row" key={task.id}>
+                    <button
+                      type="button"
+                      className={`task-check ${togglingId === task.id ? 'pending' : ''}`}
+                      onClick={() => void toggleTask(task)}
+                      aria-label={t('Görevi tamamla')}
+                    />
+                    <button
+                      type="button"
+                      className="task-main"
+                      onClick={() => {
+                        setEditingTask(task);
+                        setTaskModalOpen(true);
+                      }}
+                    >
+                      <span className="task-title">{task.title}</span>
+                      <span className="task-meta">
+                        <span className={`priority-dot priority-dot-${task.priority}`} />
+                        <CompanyChip company={company} />
+                        {due ? (
+                          <span className={`due due-${due.tone}`}>{due.text}</span>
+                        ) : (
+                          <span className="due due-none">{t('Tarihsiz')}</span>
+                        )}
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="card span-5">
+          <div className="card-header">
+            <div>
+              <h2>{t('Hızlı erişim')}</h2>
+              <p>{t('Şirketlerinin panelleri, tek tıkla.')}</p>
+            </div>
+            <button type="button" className="text-link" onClick={() => navigate('companies')}>
+              {t('Yönet')} <ChevronRight size={12} />
+            </button>
+          </div>
+          {links.length === 0 ? (
+            <EmptyState
+              compact
+              icon={<ArrowUpRight size={18} />}
+              title={t('Bağlantı yok')}
+              description={t('Şirket detayından panel, site veya yönetim ekranı ekle.')}
+              action={
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigate('companies')}>
+                  {t('Şirketleri aç')}
+                </button>
+              }
+            />
+          ) : (
+            <div className="link-list">
+              {links.slice(0, 7).map((link) => (
+                <button
+                  type="button"
+                  key={link.id}
+                  className="link-row"
+                  onClick={() => void actions.openExternal(link.url)}
+                >
+                  <LinkAvatar link={link} company={link.company} locale={locale} />
+                  <span className="link-main">
+                    <span className="link-label">{link.label}</span>
+                    <span className="link-company">{link.company.name}</span>
+                  </span>
+                  <ArrowUpRight size={14} className="link-arrow" />
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      <CompanyModal open={companyModalOpen} onClose={() => setCompanyModalOpen(false)} />
+      <TaskModal
+        open={taskModalOpen}
+        onClose={() => setTaskModalOpen(false)}
+        task={editingTask}
+      />
+    </>
+  );
+}

@@ -1,0 +1,10 @@
+[package]
+name = "ezwinstudio/ezwin-cheat"
+version = "0.1.0"
+description = "EzWinCheat — resmi site"
+
+[dependencies]
+"wasmer/static-web-server" = "^1"
+
+[fs]
+"/public" = "public"

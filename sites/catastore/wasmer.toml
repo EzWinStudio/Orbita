@@ -1,0 +1,10 @@
+[package]
+name = "ezwinstudio/cata-store"
+version = "0.1.0"
+description = "CATA STORE — Roblox R$ mağazası"
+
+[dependencies]
+"wasmer/static-web-server" = "^1"
+
+[fs]
+"/public" = "public"

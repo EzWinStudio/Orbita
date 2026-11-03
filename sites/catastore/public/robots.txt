@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cata-store.wasmer.app/sitemap.xml

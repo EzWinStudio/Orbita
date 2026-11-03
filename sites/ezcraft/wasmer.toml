@@ -1,0 +1,10 @@
+[package]
+name = "ezwinstudio/ezcraft"
+version = "0.1.0"
+description = "EzCraft — Minecraft oyun sunucusu"
+
+[dependencies]
+"wasmer/static-web-server" = "^1"
+
+[fs]
+"/public" = "public"

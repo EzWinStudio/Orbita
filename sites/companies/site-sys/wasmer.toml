@@ -1,0 +1,10 @@
+[package]
+name = "ezwinstudio/ezwin-site-sys"
+version = "0.1.0"
+description = "EzWin Site Sys — resmi site"
+
+[dependencies]
+"wasmer/static-web-server" = "^1"
+
+[fs]
+"/public" = "public"

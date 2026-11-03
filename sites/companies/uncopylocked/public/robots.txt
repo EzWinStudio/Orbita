@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ezwin-uncopylocked.wasmer.app/sitemap.xml

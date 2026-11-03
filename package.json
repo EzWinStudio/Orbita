@@ -1,0 +1,85 @@
+{
+  "name": "ezwin-hub",
+  "version": "1.10.1",
+  "private": true,
+  "description": "EZWIN HUB — kişisel şirket komuta merkezi",
+  "author": "EzWin",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite --config vite.web.config.mts",
+    "build": "node scripts/gen-icon.cjs && node scripts/gen-installer-art.cjs && vite build",
+    "build:web": "node scripts/gen-web-icons.cjs && vite build --config vite.web.config.mts",
+    "build:tray": "node scripts/build-tray.cjs",
+    "preview:web": "vite preview --config vite.web.config.mts",
+    "start": "electron .",
+    "typecheck": "tsc --noEmit",
+    "dist": "npm run build && electron-builder --win",
+    "pack": "npm run build && electron-builder --win --dir"
+  },
+  "dependencies": {
+    "html-to-text": "^10.0.1",
+    "imapflow": "^2.10.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0",
+    "lucide-react": "^1.66.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "sharp": "^0.35.5",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.5"
+  },
+  "build": {
+    "appId": "com.ezwin.hub",
+    "productName": "EZWIN HUB",
+    "executableName": "EZWIN HUB",
+    "copyright": "© 2026 EZWIN",
+    "directories": {
+      "output": "release-artifacts",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "EZWIN HUB",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "license": "build/license.txt",
+      "installerSidebar": "build/installer-sidebar.bmp",
+      "uninstallerSidebar": "build/installer-sidebar.bmp",
+      "installerHeader": "build/installer-header.bmp",
+      "multiLanguageInstaller": true,
+      "installerLanguages": [
+        "tr_TR",
+        "en_US"
+      ],
+      "artifactName": "EZWIN-HUB-Setup-${version}.${ext}"
+    }
+  }
+}

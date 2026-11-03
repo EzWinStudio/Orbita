@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-11-01",
+  "supportDiscord": "https://discord.gg/4vYK5vWCy8",
+  "portfolio": "https://ezwin-portfolyo.wasmer.app",
+  "brands": [
+    {
+      "name": "EZWIN Corporation",
+      "slug": "corporation",
+      "app": "ezwin-corporation",
+      "url": "https://ezwin-corporation.wasmer.app",
+      "color": "#e5484d",
+      "category": "agency",
+      "description": "EzWin markalarını tek çatı altında toplayan kurum. Stüdyo, ticaret ve topluluk hatları.",
+      "appLogo": "company-logos/ezwin-corporation.png",
+      "siteLogo": "corporation/public/logo.png"
+    },
+    {
+      "name": "EzWin FiveM",
+      "slug": "fivem",
+      "app": "ezwin-fivem",
+      "url": "https://ezwin-fivem.wasmer.app",
+      "color": "#5ee7f5",
+      "category": "studio",
+      "description": "QBCore tabanlı FiveM kaynak paketleri; oxmysql, PolyZone, spawn seçici, txAdmin ve test sunucusu.",
+      "appLogo": "company-logos/ezwin-fivem.png",
+      "siteLogo": "fivem/public/logo.png"
+    },
+    {
+      "name": "EzWin Hesap Hizmetleri",
+      "slug": "hesap",
+      "app": "ezwin-hesap",
+      "url": "https://ezwin-hesap.wasmer.app",
+      "color": "#5b8cff",
+      "category": "store",
+      "description": "Hesap kurulumu, erişim ayarları ve dijital teslim süreçleri; doğrulama odaklı akış.",
+      "appLogo": "company-logos/ezwin-hesap-hizmetleri.png",
+      "siteLogo": "hesap/public/logo.png"
+    },
+    {
+      "name": "EzWin Site Sys",
+      "slug": "site-sys",
+      "app": "ezwin-site-sys",
+      "url": "https://ezwin-site-sys.wasmer.app",
+      "color": "#c8ff3d",
+      "category": "studio",
+      "description": "Tanıtım siteleri, panel arayüzleri ve ortak tasarım sistemleri üreten web stüdyosu.",
+      "appLogo": "company-logos/ezwin-site-sys.png",
+      "siteLogo": "site-sys/public/logo.png"
+    },
+    {
+      "name": "EzWin Template",
+      "slug": "template",
+      "app": "ezwin-template",
+      "url": "https://ezwin-template.wasmer.app",
+      "color": "#ff8a2b",
+      "category": "platform",
+      "description": "Roblox Studio için menü, HUD ve oyun döngüsü şablonları.",
+      "appLogo": "company-logos/ezwin-template.png",
+      "siteLogo": "template/public/logo.png"
+    },
+    {
+      "name": "EzWin Uncopylocked",
+      "slug": "uncopylocked",
+      "app": "ezwin-uncopylocked",
+      "url": "https://ezwin-uncopylocked.wasmer.app",
+      "color": "#ff4d5e",
+      "category": "platform",
+      "description": "Roblox Studio için uncopylocked tabanlar, 3D prop setleri ve düzenlenebilir sahneler.",
+      "appLogo": "company-logos/ezwin-uncopylocked.png",
+      "siteLogo": "uncopylocked/public/logo.png"
+    },
+    {
+      "name": "EzWinCheat",
+      "slug": "cheat",
+      "app": "ezwin-cheat",
+      "url": "https://ezwin-cheat.wasmer.app",
+      "color": "#ff5c8a",
+      "category": "other",
+      "description": "Kendi test ortamında Luau davranışını izleyen, ölçen ve raporlayan çalışma alanı.",
+      "appLogo": "company-logos/ezwin-cheat.png",
+      "siteLogo": "cheat/public/logo.png"
+    }
+  ]
+}
