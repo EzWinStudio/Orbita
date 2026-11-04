@@ -326,7 +326,10 @@ function localIsEmpty(state: AppData): boolean {
     state.notes.length === 0 &&
     state.finance.length === 0 &&
     state.mailAccounts.length === 0 &&
-    state.youtubeChannels.length === 0
+    state.youtubeChannels.length === 0 &&
+    state.employees.length === 0 &&
+    state.projects.length === 0 &&
+    state.approvals.length === 0
   );
 }
 

@@ -4,6 +4,7 @@ import {
   Bot,
   Building2,
   Calculator,
+  FolderKanban,
   Languages,
   LayoutDashboard,
   Link2,
@@ -39,6 +40,7 @@ const NAV_ITEMS: { page: Page; label: TranslationKey; icon: typeof LayoutDashboa
 const WORK_ITEMS: { page: Page; label: TranslationKey; icon: typeof LayoutDashboard }[] = [
   { page: 'mail', label: 'Posta', icon: Mail },
   { page: 'finance', label: 'Finans', icon: Wallet },
+  { page: 'operations', label: 'Operasyon', icon: FolderKanban },
   { page: 'tasks', label: 'Görev & Notlar', icon: ListChecks },
   { page: 'tools', label: 'Hesap & Kur', icon: Calculator },
 ];
@@ -69,6 +71,7 @@ export function Sidebar({ page, companyId, navigate }: SidebarProps) {
   if (!data) return null;
 
   const openTaskCount = data.tasks.filter((task) => !task.done).length;
+  const pendingApprovalCount = data.approvals.filter((approval) => approval.status === 'pending').length;
   const offlineCount = Object.values(data.statuses).filter(
     (status) => status.state === 'offline',
   ).length;
@@ -128,6 +131,14 @@ export function Sidebar({ page, companyId, navigate }: SidebarProps) {
                 {item.page === 'tasks' && openTaskCount > 0 ? (
                   <span className="nav-badge" title={t('{count} açık görev', { count: openTaskCount })}>
                     {openTaskCount}
+                  </span>
+                ) : null}
+                {item.page === 'operations' && pendingApprovalCount > 0 ? (
+                  <span
+                    className="nav-badge nav-badge-warning"
+                    title={t('{count} bekleyen onay', { count: pendingApprovalCount })}
+                  >
+                    {pendingApprovalCount}
                   </span>
                 ) : null}
               </button>

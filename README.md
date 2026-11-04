@@ -13,7 +13,7 @@ Bu depo, Orbita ekosistemindeki her şeyi tek yerden indirmek için hazırlandı
 | Canlı web uygulaması | [orbita.wasmer.app](https://orbita.wasmer.app) |
 | Windows kurulum sayfası | [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) |
 
-Kurulum paketi `Orbita-Setup-2.2.0.exe` adıyla sürüm sayfasına yüklenir. Premium kurulum sayfası [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) üzerinden doğrudan indirilebilir. Uygulama `%LOCALAPPDATA%\Programs\Orbita` klasörüne kurulur; mevcut EZWIN HUB verileri, yedekler ve bot sırları korunur. İlk açılışta mevcut WebView2 oturumu ve şirket verileri yeni Electron profiline otomatik taşınır.
+Kurulum paketi `Orbita-Setup-2.3.0.exe` adıyla sürüm sayfasına yüklenir. Premium kurulum sayfası [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) üzerinden doğrudan indirilebilir. Uygulama `%LOCALAPPDATA%\Programs\Orbita` klasörüne kurulur; mevcut EZWIN HUB verileri, yedekler ve bot sırları korunur. İlk açılışta mevcut WebView2 oturumu ve şirket verileri yeni Electron profiline otomatik taşınır.
 
 Kanıtlanmış eski adres [ezwin-hub.wasmer.app](https://ezwin-hub.wasmer.app) de aynı Orbita sürümünü sunar.
 

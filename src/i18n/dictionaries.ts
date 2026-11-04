@@ -8,6 +8,7 @@ import { mailRows } from './dicts/mail';
 import { modalsRows } from './dicts/modals';
 import { youtubeRows } from './dicts/youtube';
 import { studioRows } from './dicts/studio';
+import { operationsRows } from './dicts/operations';
 import { webRows } from './dicts/web';
 
 type TranslationKey = keyof typeof en;
@@ -22,6 +23,7 @@ const rows: readonly TranslationRow[] = [
   ...modalsRows,
   ...youtubeRows,
   ...studioRows,
+  ...operationsRows,
   ...webRows,
 ];
 

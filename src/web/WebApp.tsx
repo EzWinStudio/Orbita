@@ -10,6 +10,7 @@ import { Services } from '../pages/Services';
 import { Companies } from '../pages/Companies';
 import { CompanyDetail } from '../pages/CompanyDetail';
 import { Finance } from '../pages/Finance';
+import { Operations } from '../pages/Operations';
 import { TasksNotes } from '../pages/TasksNotes';
 import { Tools } from '../pages/Tools';
 import { Translate } from '../pages/Translate';
@@ -35,6 +36,7 @@ const WEB_PAGES: Page[] = [
   'companies',
   'company',
   'finance',
+  'operations',
   'tasks',
   'tools',
   'translate',
@@ -155,6 +157,9 @@ export function WebApp() {
       break;
     case 'finance':
       content = <Finance navigate={navigate} intent={intent} onIntentHandled={handleIntent} />;
+      break;
+    case 'operations':
+      content = <Operations navigate={navigate} />;
       break;
     case 'tasks':
       content = <TasksNotes intent={intent} onIntentHandled={handleIntent} />;

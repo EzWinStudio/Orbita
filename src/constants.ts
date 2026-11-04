@@ -1,9 +1,12 @@
 import type {
+  ApprovalStatus,
   AssetType,
   CompanyCategory,
   CompanyHealthState,
   CompanyStatus,
   Currency,
+  EmployeeStatus,
+  ProjectStatus,
   ServiceState,
 } from './types';
 import type { TranslationKey } from './i18n/core';
@@ -44,6 +47,26 @@ export const COMPANY_CATEGORY_LABEL: Record<CompanyCategory, TranslationKey> = {
   store: 'Mağaza',
   music: 'Müzik',
   other: 'Diğer',
+};
+
+export const EMPLOYEE_STATUSES: EmployeeStatus[] = ['active', 'on_leave', 'inactive'];
+export const EMPLOYEE_STATUS_LABEL: Record<EmployeeStatus, TranslationKey> = {
+  active: 'Aktif',
+  on_leave: 'İzinde',
+  inactive: 'Pasif',
+};
+
+export const PROJECT_STATUSES: ProjectStatus[] = ['active', 'paused', 'completed'];
+export const PROJECT_STATUS_LABEL: Record<ProjectStatus, TranslationKey> = {
+  active: 'Aktif',
+  paused: 'Duraklatıldı',
+  completed: 'Tamamlandı',
+};
+
+export const APPROVAL_STATUS_LABEL: Record<ApprovalStatus, TranslationKey> = {
+  pending: 'Bekliyor',
+  approved: 'Onaylandı',
+  rejected: 'Reddedildi',
 };
 
 export const CURRENCIES: Currency[] = ['TRY', 'USD', 'EUR'];

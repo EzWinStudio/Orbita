@@ -1,11 +1,16 @@
 import { useMemo, useState } from 'react';
 import {
   Activity,
+  ArrowDownLeft,
   ArrowUpRight,
   Bot,
   Building2,
   Cable,
+  Check,
+  CheckCircle2,
   ChevronRight,
+  FileText,
+  FolderKanban,
   Globe2,
   ListChecks,
   MessageCircle,
@@ -14,7 +19,9 @@ import {
   Server,
   ShieldCheck,
   UserPlus,
+  Users,
   Wallet,
+  X,
   Zap,
 } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
@@ -22,6 +29,7 @@ import { KpiCard } from '../components/KpiCard';
 import { WebNotice } from '../web/WebNotice';
 import { IS_TRAY, IS_WEB } from '../lib/runtime';
 import { MonthlyBars } from '../components/MonthlyBars';
+import { WeeklyBars, type DayPerformance } from '../components/WeeklyBars';
 import { StatusPill } from '../components/StatusPill';
 import { LinkAvatar, ServiceAvatar } from '../components/BrandAvatar';
 import { CompanyChip } from '../components/CompanyChip';
@@ -35,7 +43,8 @@ import { serviceStateLabel, serviceSummary } from '../lib/status';
 import { useBotHints } from '../web/botSecrets';
 import { compactNumber } from '../lib/youtube';
 import type { Page } from '../nav';
-import type { Asset, ServiceState, Task } from '../types';
+import type { Approval, Asset, ServiceState, Task } from '../types';
+import { buildActivity, type ActivityKind } from '../lib/activity';
 import {
   currentMonthKey,
   formatMoney,
@@ -60,9 +69,45 @@ const SEVERITY: Record<ServiceState, number> = {
 
 const PRIORITY_WEIGHT = { high: 3, med: 2, low: 1 } as const;
 
+function dayKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function activityIcon(kind: ActivityKind) {
+  switch (kind) {
+    case 'income':
+      return ArrowDownLeft;
+    case 'expense':
+      return ArrowUpRight;
+    case 'company':
+      return Building2;
+    case 'service':
+      return Activity;
+    case 'task':
+      return ListChecks;
+    case 'task_done':
+      return CheckCircle2;
+    case 'note':
+      return FileText;
+    case 'project':
+    case 'project_done':
+      return FolderKanban;
+    case 'employee':
+      return Users;
+    case 'approval':
+      return ShieldCheck;
+    case 'approval_approved':
+      return CheckCircle2;
+    case 'approval_rejected':
+      return X;
+    default:
+      return Activity;
+  }
+}
+
 export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
   const data = useAppData();
-  const { actions } = useApp();
+  const { actions, confirm } = useApp();
   const { t, locale } = useI18n();
   const botHints = useBotHints();
   const [refreshing, setRefreshing] = useState(false);
@@ -70,6 +115,7 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [decidingId, setDecidingId] = useState<string | null>(null);
 
   const currency = data.settings.currency;
   const monthKey = currentMonthKey();
@@ -156,6 +202,74 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
     [data.tasks],
   );
   const overdueCount = openTasks.filter((task) => task.due && task.due < today).length;
+
+  const activeProjectCount = data.projects.filter((project) => project.status === 'active').length;
+  const completedProjectCount = data.projects.filter(
+    (project) => project.status === 'completed',
+  ).length;
+  const completedTaskCount = data.tasks.filter((task) => task.done).length;
+  const totalIncome = data.finance
+    .filter((entry) => entry.kind === 'income')
+    .reduce((sum, entry) => sum + entry.amount, 0);
+  const totalExpense = data.finance
+    .filter((entry) => entry.kind === 'expense')
+    .reduce((sum, entry) => sum + entry.amount, 0);
+  const activeEmployeeCount = data.employees.filter(
+    (employee) => employee.status === 'active',
+  ).length;
+
+  const pendingApprovals = useMemo(
+    () =>
+      data.approvals
+        .filter((approval) => approval.status === 'pending')
+        .sort((a, b) => b.createdAt - a.createdAt),
+    [data.approvals],
+  );
+
+  const activities = useMemo(() => buildActivity(data, t, 8), [data, t]);
+
+  const weekDays = useMemo<DayPerformance[]>(() => {
+    const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    const days: DayPerformance[] = [];
+    const now = new Date();
+    for (let offset = 6; offset >= 0; offset -= 1) {
+      const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+      const key = dayKey(date);
+      days.push({
+        key,
+        label: formatter.format(date).toLocaleUpperCase(locale),
+        income: data.finance
+          .filter((entry) => entry.kind === 'income' && entry.date === key)
+          .reduce((sum, entry) => sum + entry.amount, 0),
+        expense: data.finance
+          .filter((entry) => entry.kind === 'expense' && entry.date === key)
+          .reduce((sum, entry) => sum + entry.amount, 0),
+        tasks: data.tasks.filter(
+          (task) => task.done && task.completedAt && dayKey(new Date(task.completedAt)) === key,
+        ).length,
+      });
+    }
+    return days;
+  }, [data.finance, data.tasks, locale]);
+
+  const weekIncome = weekDays.reduce((sum, day) => sum + day.income, 0);
+  const weekExpense = weekDays.reduce((sum, day) => sum + day.expense, 0);
+  const weekTaskCount = weekDays.reduce((sum, day) => sum + day.tasks, 0);
+
+  const decideApproval = async (approval: Approval, status: 'approved' | 'rejected') => {
+    if (decidingId) return;
+    if (status === 'rejected') {
+      const sure = await confirm({
+        title: t('Talep reddedilsin mi?'),
+        message: t('“{title}” talebi reddedilecek.', { title: approval.title }),
+        confirmLabel: t('Talebi reddet'),
+      });
+      if (!sure) return;
+    }
+    setDecidingId(approval.id);
+    await actions.decideApproval(approval.id, status);
+    setDecidingId(null);
+  };
 
   const listedAssets = IS_WEB ? data.assets : monitoredAssets;
 
@@ -456,7 +570,232 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
         />
       </div>
 
+      <div className="ops-metrics">
+        <button type="button" className="ops-metric" onClick={() => navigate('operations')}>
+          <span className="ops-metric-top">
+            <span>{t('Toplam çalışan')}</span>
+            <Users size={15} />
+          </span>
+          <strong>{data.employees.length}</strong>
+          <small>{t('{count} aktif çalışan', { count: activeEmployeeCount })}</small>
+        </button>
+        <button type="button" className="ops-metric" onClick={() => navigate('operations')}>
+          <span className="ops-metric-top">
+            <span>{t('Aktif projeler')}</span>
+            <FolderKanban size={15} />
+          </span>
+          <strong>{activeProjectCount}</strong>
+          <small>{t('{count} tamamlanan proje', { count: completedProjectCount })}</small>
+        </button>
+        <button type="button" className="ops-metric" onClick={() => navigate('tasks')}>
+          <span className="ops-metric-top">
+            <span>{t('Tamamlanan görevler')}</span>
+            <CheckCircle2 size={15} />
+          </span>
+          <strong>{completedTaskCount}</strong>
+          <small>{t('{count} açık görev', { count: openTasks.length })}</small>
+        </button>
+        <button
+          type="button"
+          className="ops-metric ops-metric-income"
+          onClick={() => navigate('finance')}
+        >
+          <span className="ops-metric-top">
+            <span>{t('Toplam gelir')}</span>
+            <ArrowDownLeft size={15} />
+          </span>
+          <strong>{data.finance.length ? formatMoney(totalIncome, currency) : '—'}</strong>
+          <small>
+            {t('{count} gelir kaydı', {
+              count: data.finance.filter((entry) => entry.kind === 'income').length,
+            })}
+          </small>
+        </button>
+        <button
+          type="button"
+          className="ops-metric ops-metric-expense"
+          onClick={() => navigate('finance')}
+        >
+          <span className="ops-metric-top">
+            <span>{t('Toplam gider')}</span>
+            <ArrowUpRight size={15} />
+          </span>
+          <strong>{data.finance.length ? formatMoney(totalExpense, currency) : '—'}</strong>
+          <small>
+            {t('{count} gider kaydı', {
+              count: data.finance.filter((entry) => entry.kind === 'expense').length,
+            })}
+          </small>
+        </button>
+        <button
+          type="button"
+          className={`ops-metric ${pendingApprovals.length ? 'ops-metric-amber' : ''}`}
+          onClick={() => navigate('operations')}
+        >
+          <span className="ops-metric-top">
+            <span>{t('Bekleyen onaylar')}</span>
+            <ShieldCheck size={15} />
+          </span>
+          <strong>{pendingApprovals.length}</strong>
+          <small>{t('{count} talep karar bekliyor', { count: pendingApprovals.length })}</small>
+        </button>
+      </div>
+
       <div className="dash-grid">
+        <section className="card span-7">
+          <div className="card-header">
+            <div>
+              <h2>{t('Haftalık performans')}</h2>
+              <p>
+                {t('Son 7 gün')} · {t('{income} gelir · {expense} gider', {
+                  income: formatMoney(weekIncome, currency),
+                  expense: formatMoney(weekExpense, currency),
+                })}
+              </p>
+            </div>
+            <span className="mini-mono">
+              {t('{count} tamamlanan görev', { count: weekTaskCount })}
+            </span>
+          </div>
+          <div className="week-summary">
+            <div>
+              <span>{t('Gelir')}</span>
+              <strong className="text-income">{formatMoney(weekIncome, currency)}</strong>
+            </div>
+            <div>
+              <span>{t('Gider')}</span>
+              <strong className="text-danger">{formatMoney(weekExpense, currency)}</strong>
+            </div>
+            <div>
+              <span>{t('Net')}</span>
+              <strong className={weekIncome - weekExpense < 0 ? 'text-danger' : ''}>
+                {formatMoney(weekIncome - weekExpense, currency)}
+              </strong>
+            </div>
+            <div>
+              <span>{t('Tamamlanan görev')}</span>
+              <strong>{weekTaskCount}</strong>
+            </div>
+          </div>
+          <WeeklyBars days={weekDays} currency={currency} />
+        </section>
+
+        <section className="card span-5">
+          <div className="card-header">
+            <div>
+              <h2>{t('Bekleyen onaylar')}</h2>
+              <p>
+                {pendingApprovals.length
+                  ? t('{count} talep karar bekliyor', { count: pendingApprovals.length })
+                  : t('Karar bekleyen talep yok')}
+              </p>
+            </div>
+            <button type="button" className="text-link" onClick={() => navigate('operations')}>
+              {t('Tüm onaylar')} <ChevronRight size={12} />
+            </button>
+          </div>
+          {pendingApprovals.length === 0 ? (
+            <EmptyState
+              compact
+              icon={<ShieldCheck size={18} />}
+              title={t('Bekleyen onay yok')}
+              description={t('Yeni bir talep oluşturduğunda onay kuyruğu burada görünür.')}
+              action={
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => navigate('operations')}
+                >
+                  <Plus size={14} /> {t('Talep oluştur')}
+                </button>
+              }
+            />
+          ) : (
+            <div className="approval-mini-list">
+              {pendingApprovals.slice(0, 4).map((approval) => {
+                const company = companyById.get(approval.companyId);
+                return (
+                  <div className="approval-mini" key={approval.id}>
+                    <div className="approval-mini-main">
+                      <strong>{approval.title}</strong>
+                      <span>
+                        <CompanyChip company={company} />
+                        {approval.amount != null
+                          ? ` · ${formatMoney(approval.amount, currency)}`
+                          : ''}
+                        {approval.requestedBy ? ` · ${approval.requestedBy}` : ''}
+                      </span>
+                    </div>
+                    <div className="approval-mini-actions">
+                      <button
+                        type="button"
+                        className="icon-btn approval-approve"
+                        onClick={() => void decideApproval(approval, 'approved')}
+                        disabled={decidingId === approval.id}
+                        aria-label={t('Talebi onayla')}
+                      >
+                        <Check size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-btn approval-reject"
+                        onClick={() => void decideApproval(approval, 'rejected')}
+                        disabled={decidingId === approval.id}
+                        aria-label={t('Talebi reddet')}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="card span-12">
+          <div className="card-header">
+            <div>
+              <h2>{t('Son aktiviteler')}</h2>
+              <p>{t('Finans, görev, proje, ekip ve onay kayıtlarından otomatik oluşturulur.')}</p>
+            </div>
+            <button type="button" className="text-link" onClick={() => navigate('operations')}>
+              {t('Operasyonu aç')} <ChevronRight size={12} />
+            </button>
+          </div>
+          {activities.length === 0 ? (
+            <EmptyState
+              compact
+              icon={<Activity size={18} />}
+              title={t('Henüz aktivite yok')}
+              description={t('İlk kaydı eklediğinde son hareketler burada kronolojik olarak listelenir.')}
+            />
+          ) : (
+            <div className="activity-list">
+              {activities.map((item) => {
+                const Icon = activityIcon(item.kind);
+                return (
+                  <button
+                    type="button"
+                    className="activity-row"
+                    key={item.id}
+                    onClick={() => navigate(item.page, item.companyId)}
+                  >
+                    <span className={`activity-icon tone-${item.tone}`}>
+                      <Icon size={14} />
+                    </span>
+                    <span className="activity-main">
+                      <span className="activity-title">{item.title}</span>
+                      <span className="activity-meta">{item.meta}</span>
+                    </span>
+                    <span className="activity-time">{relativeTime(item.at)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
         {!IS_WEB && data.youtubeChannels.length > 0 ? (
           <section className="card span-12 youtube-overview">
             <div className="card-header">

@@ -227,6 +227,49 @@ export interface Task {
   due: string | null;
   done: boolean;
   createdAt: number;
+  completedAt?: number | null;
+}
+
+export type EmployeeStatus = 'active' | 'on_leave' | 'inactive';
+
+export interface Employee {
+  id: string;
+  companyId: string;
+  name: string;
+  role: string;
+  email: string;
+  status: EmployeeStatus;
+  startDate: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type ProjectStatus = 'active' | 'paused' | 'completed';
+
+export interface Project {
+  id: string;
+  companyId: string;
+  name: string;
+  description: string;
+  status: ProjectStatus;
+  progress: number;
+  dueDate: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Approval {
+  id: string;
+  companyId: string;
+  title: string;
+  requestedBy: string;
+  amount: number | null;
+  note: string;
+  status: ApprovalStatus;
+  createdAt: number;
+  decidedAt: number | null;
 }
 
 export interface Note {
@@ -299,7 +342,15 @@ export interface ServiceStatus {
 }
 
 export type ClockFormat = '24h' | '12h';
-export type StartPage = 'dashboard' | 'services' | 'companies' | 'mail' | 'finance' | 'tasks' | 'tools';
+export type StartPage =
+  | 'dashboard'
+  | 'services'
+  | 'companies'
+  | 'operations'
+  | 'mail'
+  | 'finance'
+  | 'tasks'
+  | 'tools';
 export type AppTheme = 'night' | 'violet' | 'ice' | 'lime';
 
 export type ConnectionPlatform = 'youtube' | 'instagram' | 'tiktok';
@@ -537,6 +588,9 @@ export interface AppData {
   tasks: Task[];
   notes: Note[];
   finance: FinanceEntry[];
+  employees: Employee[];
+  projects: Project[];
+  approvals: Approval[];
   connections: Connection[];
   playlist: PlaylistTrack[];
   settings: Settings;
@@ -624,6 +678,61 @@ export interface UpdateTaskInput {
   done?: boolean;
 }
 
+export interface CreateEmployeeInput {
+  companyId: string;
+  name: string;
+  role?: string;
+  email?: string;
+  status?: EmployeeStatus;
+  startDate?: string | null;
+}
+
+export interface UpdateEmployeeInput {
+  id: string;
+  companyId?: string;
+  name?: string;
+  role?: string;
+  email?: string;
+  status?: EmployeeStatus;
+  startDate?: string | null;
+}
+
+export interface CreateProjectInput {
+  companyId: string;
+  name: string;
+  description?: string;
+  status?: ProjectStatus;
+  progress?: number;
+  dueDate?: string | null;
+}
+
+export interface UpdateProjectInput {
+  id: string;
+  companyId?: string;
+  name?: string;
+  description?: string;
+  status?: ProjectStatus;
+  progress?: number;
+  dueDate?: string | null;
+}
+
+export interface CreateApprovalInput {
+  companyId: string;
+  title: string;
+  requestedBy?: string;
+  amount?: number | null;
+  note?: string;
+}
+
+export interface UpdateApprovalInput {
+  id: string;
+  companyId?: string;
+  title?: string;
+  requestedBy?: string;
+  amount?: number | null;
+  note?: string;
+}
+
 export interface CreateNoteInput {
   title?: string;
   body?: string;
@@ -698,6 +807,22 @@ export interface EzwinApi {
   finance: {
     create: (input: CreateFinanceInput) => Promise<AppData>;
     remove: (id: string) => Promise<AppData>;
+  };
+  employee: {
+    create: (input: CreateEmployeeInput) => Promise<AppData>;
+    update: (input: UpdateEmployeeInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  project: {
+    create: (input: CreateProjectInput) => Promise<AppData>;
+    update: (input: UpdateProjectInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  approval: {
+    create: (input: CreateApprovalInput) => Promise<AppData>;
+    update: (input: UpdateApprovalInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+    decide: (id: string, status: Exclude<ApprovalStatus, 'pending'>) => Promise<AppData>;
   };
   settings: {
     update: (input: UpdateSettingsInput) => Promise<AppData>;

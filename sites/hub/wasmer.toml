@@ -1,6 +1,6 @@
 [package]
 name = "ezwinstudio/ezwin-hub"
-version = "0.5.1"
+version = "0.5.3"
 description = "Orbita — browser-based local company command center (legacy address)"
 
 [dependencies]

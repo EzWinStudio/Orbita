@@ -31,11 +31,11 @@ export function MonthlyBars({ months, currency, compact = false }: MonthlyBarsPr
             <span className="legend-swatch legend-expense" /> {t('Gider')}
           </span>
         </div>
-        {!compact && (
+        {!compact && hasData ? (
           <span className="chart-scale">
             {t('En yüksek: {amount}', { amount: formatMoney(max, currency) })}
           </span>
-        )}
+        ) : null}
       </div>
       <div className="chart-plot">
         {months.map((month, index) => {

@@ -1,19 +1,11 @@
 node_modules/
 dist/
-web-dist/
 release/
-release-artifacts/
-release-artifacts-*/
-build-output/
-.build-cache/
-.check-*/
-.screenshots/
-.shots/
+build/icon.png
 *.log
-*.tsbuildinfo
 .DS_Store
-.env
-.env.*
 
-public/download/Orbita-Setup-2.2.0.exe
-public/download/Orbita-Portable-*.exe
+.screenshots/
+
+release-artifacts/
+build-output/

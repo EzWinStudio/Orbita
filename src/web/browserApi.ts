@@ -4,11 +4,15 @@ import { normalizeLanguage } from '../i18n/languages';
 import { scopedStorageKey } from './workspaceScope';
 import type {
   AppData,
+  Approval,
+  ApprovalStatus,
   Asset,
   AssetType,
   Company,
   CompanyCategory,
   CompanyStatus,
+  Employee,
+  EmployeeStatus,
   FinanceEntry,
   EzwinApi,
   HistoryPoint,
@@ -16,6 +20,8 @@ import type {
   LinkItem,
   Meta,
   Note,
+  Project,
+  ProjectStatus,
   RatesPayload,
   ServiceStatus,
   Settings,
@@ -27,7 +33,7 @@ const SAVED_AT_KEY = 'ezwin.hub.web.savedAt.v1';
 const RATES_KEY = 'ezwin.hub.web.rates.v1';
 const RATES_URL = 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,EUR';
 const RATES_MAX_AGE = 15 * 60 * 1000;
-const WEB_VERSION = '2.2.0';
+const WEB_VERSION = '2.3.0';
 
 const COMPANY_STATUSES: CompanyStatus[] = ['active', 'maintenance', 'paused'];
 const COMPANY_CATEGORIES: CompanyCategory[] = [
@@ -40,7 +46,17 @@ const COMPANY_CATEGORIES: CompanyCategory[] = [
   'other',
 ];
 const ASSET_TYPES: AssetType[] = ['discord', 'pterodactyl', 'website'];
-const START_PAGES = ['dashboard', 'services', 'companies', 'finance', 'tasks', 'tools'] as const;
+const START_PAGES = [
+  'dashboard',
+  'services',
+  'companies',
+  'operations',
+  'finance',
+  'tasks',
+  'tools',
+] as const;
+const EMPLOYEE_STATUSES: EmployeeStatus[] = ['active', 'on_leave', 'inactive'];
+const PROJECT_STATUSES: ProjectStatus[] = ['active', 'paused', 'completed'];
 
 type StatusListener = (statuses: Record<string, ServiceStatus>) => void;
 const statusListeners = new Set<StatusListener>();
@@ -242,6 +258,7 @@ function normalizeTask(raw: unknown, companyIds: Set<string>): Task | null {
     due: due || null,
     done: Boolean(raw.done),
     createdAt: asNumber(raw.createdAt, Date.now()),
+    completedAt: Boolean(raw.done) ? asNumber(raw.completedAt, 0) || null : null,
   };
 }
 
@@ -281,6 +298,75 @@ function normalizeFinance(raw: unknown, companyIds: Set<string>): FinanceEntry |
     note: asString(raw.note),
     date,
     createdAt: asNumber(raw.createdAt, Date.now()),
+  };
+}
+
+function normalizeEmployee(raw: unknown, companyIds: Set<string>): Employee | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const name = asString(raw.name);
+  if (!name) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const startDate = asString(raw.startDate);
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    name,
+    role: asString(raw.role),
+    email: asString(raw.email),
+    status: EMPLOYEE_STATUSES.includes(raw.status as EmployeeStatus)
+      ? (raw.status as EmployeeStatus)
+      : 'active',
+    startDate: /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null,
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeProject(raw: unknown, companyIds: Set<string>): Project | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const name = asString(raw.name);
+  if (!name) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const dueDate = asString(raw.dueDate);
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    name,
+    description: asString(raw.description),
+    status: PROJECT_STATUSES.includes(raw.status as ProjectStatus)
+      ? (raw.status as ProjectStatus)
+      : 'active',
+    progress: Math.min(100, Math.max(0, asNumber(raw.progress, 0))),
+    dueDate: /^\d{4}-\d{2}-\d{2}$/.test(dueDate) ? dueDate : null,
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeApproval(raw: unknown, companyIds: Set<string>): Approval | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const title = asString(raw.title);
+  if (!title) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const status: ApprovalStatus =
+    raw.status === 'approved' || raw.status === 'rejected' ? raw.status : 'pending';
+  const amount = asNumber(raw.amount, 0);
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    title,
+    requestedBy: asString(raw.requestedBy),
+    amount: amount > 0 ? amount : null,
+    note: asString(raw.note),
+    status,
+    createdAt,
+    decidedAt: status !== 'pending' ? asNumber(raw.decidedAt, createdAt) : null,
   };
 }
 
@@ -338,6 +424,9 @@ function emptyState(): AppData {
     tasks: [],
     notes: [],
     finance: [],
+    employees: [],
+    projects: [],
+    approvals: [],
     connections: [],
     playlist: [],
     settings: { ...DEFAULT_SETTINGS },
@@ -471,6 +560,15 @@ export function normalizeState(raw: unknown): AppData {
     finance: asArray(source.finance)
       .map((entry) => normalizeFinance(entry, companyIds))
       .filter((entry): entry is FinanceEntry => Boolean(entry)),
+    employees: asArray(source.employees)
+      .map((employee) => normalizeEmployee(employee, companyIds))
+      .filter((employee): employee is Employee => Boolean(employee)),
+    projects: asArray(source.projects)
+      .map((project) => normalizeProject(project, companyIds))
+      .filter((project): project is Project => Boolean(project)),
+    approvals: asArray(source.approvals)
+      .map((approval) => normalizeApproval(approval, companyIds))
+      .filter((approval): approval is Approval => Boolean(approval)),
     connections: [],
     playlist: [],
     settings: normalizeSettings(source.settings),
@@ -647,9 +745,17 @@ export function importBackup(text: string): {
   }
   const source = unwrapState(parsed);
   if (!isRecord(source)) throw new Error('Yedek dosyası geçersiz.');
-  const known = ['companies', 'assets', 'tasks', 'notes', 'finance', 'settings'].some(
-    (key) => key in source,
-  );
+  const known = [
+    'companies',
+    'assets',
+    'tasks',
+    'notes',
+    'finance',
+    'employees',
+    'projects',
+    'approvals',
+    'settings',
+  ].some((key) => key in source);
   if (!known) throw new Error('Yedek dosyası geçersiz.');
   const next = normalizeState(source);
   writeState(next);
@@ -865,6 +971,9 @@ export function installBrowserApi(): void {
         state.tasks = state.tasks.filter((task) => task.companyId !== id);
         state.notes = state.notes.filter((note) => note.companyId !== id);
         state.finance = state.finance.filter((entry) => entry.companyId !== id);
+        state.employees = state.employees.filter((employee) => employee.companyId !== id);
+        state.projects = state.projects.filter((project) => project.companyId !== id);
+        state.approvals = state.approvals.filter((approval) => approval.companyId !== id);
         for (const assetId of assetIds) delete state.statuses[assetId];
         return writeState(state);
       },
@@ -948,6 +1057,7 @@ export function installBrowserApi(): void {
           due: asString(input.due) || null,
           done: false,
           createdAt: Date.now(),
+          completedAt: null,
         });
         return writeState(state);
       },
@@ -968,7 +1078,12 @@ export function installBrowserApi(): void {
         }
         if (input.priority !== undefined) task.priority = input.priority;
         if (input.due !== undefined) task.due = asString(input.due) || null;
-        if (input.done !== undefined) task.done = Boolean(input.done);
+        if (input.done !== undefined) {
+          const nextDone = Boolean(input.done);
+          if (nextDone && !task.done) task.completedAt = Date.now();
+          if (!nextDone) task.completedAt = null;
+          task.done = nextDone;
+        }
         return writeState(state);
       },
       remove: async (id) => {
@@ -1044,6 +1159,180 @@ export function installBrowserApi(): void {
         const state = readState();
         if (!state.finance.some((entry) => entry.id === id)) throw new Error('Kayıt bulunamadı.');
         state.finance = state.finance.filter((entry) => entry.id !== id);
+        return writeState(state);
+      },
+    },
+    employee: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const name = asString(input.name);
+        if (!name) throw new Error('Çalışan adı gerekli.');
+        const now = Date.now();
+        const startDate = asString(input.startDate);
+        state.employees.push({
+          id: uid(),
+          companyId: input.companyId,
+          name,
+          role: asString(input.role),
+          email: asString(input.email),
+          status: EMPLOYEE_STATUSES.includes(input.status as EmployeeStatus)
+            ? (input.status as EmployeeStatus)
+            : 'active',
+          startDate: /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null,
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const employee = state.employees.find((item) => item.id === input.id);
+        if (!employee) throw new Error('Çalışan bulunamadı.');
+        if (input.companyId !== undefined) {
+          findCompany(state, input.companyId);
+          employee.companyId = input.companyId;
+        }
+        if (input.name !== undefined) {
+          const name = asString(input.name);
+          if (!name) throw new Error('Çalışan adı gerekli.');
+          employee.name = name;
+        }
+        if (input.role !== undefined) employee.role = asString(input.role);
+        if (input.email !== undefined) employee.email = asString(input.email);
+        if (input.status !== undefined && EMPLOYEE_STATUSES.includes(input.status)) {
+          employee.status = input.status;
+        }
+        if (input.startDate !== undefined) {
+          const startDate = asString(input.startDate);
+          employee.startDate = /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null;
+        }
+        employee.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.employees.some((employee) => employee.id === id)) {
+          throw new Error('Çalışan bulunamadı.');
+        }
+        state.employees = state.employees.filter((employee) => employee.id !== id);
+        return writeState(state);
+      },
+    },
+    project: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const name = asString(input.name);
+        if (!name) throw new Error('Proje adı gerekli.');
+        const now = Date.now();
+        const dueDate = asString(input.dueDate);
+        state.projects.push({
+          id: uid(),
+          companyId: input.companyId,
+          name,
+          description: asString(input.description),
+          status: PROJECT_STATUSES.includes(input.status as ProjectStatus)
+            ? (input.status as ProjectStatus)
+            : 'active',
+          progress: Math.min(100, Math.max(0, asNumber(input.progress, 0))),
+          dueDate: /^\d{4}-\d{2}-\d{2}$/.test(dueDate) ? dueDate : null,
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const project = state.projects.find((item) => item.id === input.id);
+        if (!project) throw new Error('Proje bulunamadı.');
+        if (input.companyId !== undefined) {
+          findCompany(state, input.companyId);
+          project.companyId = input.companyId;
+        }
+        if (input.name !== undefined) {
+          const name = asString(input.name);
+          if (!name) throw new Error('Proje adı gerekli.');
+          project.name = name;
+        }
+        if (input.description !== undefined) project.description = asString(input.description);
+        if (input.status !== undefined && PROJECT_STATUSES.includes(input.status)) {
+          project.status = input.status;
+        }
+        if (input.progress !== undefined) {
+          project.progress = Math.min(100, Math.max(0, asNumber(input.progress, 0)));
+        }
+        if (input.dueDate !== undefined) {
+          const dueDate = asString(input.dueDate);
+          project.dueDate = /^\d{4}-\d{2}-\d{2}$/.test(dueDate) ? dueDate : null;
+        }
+        project.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.projects.some((project) => project.id === id)) {
+          throw new Error('Proje bulunamadı.');
+        }
+        state.projects = state.projects.filter((project) => project.id !== id);
+        return writeState(state);
+      },
+    },
+    approval: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const title = asString(input.title);
+        if (!title) throw new Error('Onay başlığı gerekli.');
+        const amount = asNumber(input.amount, 0);
+        state.approvals.push({
+          id: uid(),
+          companyId: input.companyId,
+          title,
+          requestedBy: asString(input.requestedBy),
+          amount: amount > 0 ? amount : null,
+          note: asString(input.note),
+          status: 'pending',
+          createdAt: Date.now(),
+          decidedAt: null,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const approval = state.approvals.find((item) => item.id === input.id);
+        if (!approval) throw new Error('Onay bulunamadı.');
+        if (input.companyId !== undefined) {
+          findCompany(state, input.companyId);
+          approval.companyId = input.companyId;
+        }
+        if (input.title !== undefined) {
+          const title = asString(input.title);
+          if (!title) throw new Error('Onay başlığı gerekli.');
+          approval.title = title;
+        }
+        if (input.requestedBy !== undefined) approval.requestedBy = asString(input.requestedBy);
+        if (input.amount !== undefined) {
+          const amount = asNumber(input.amount, 0);
+          approval.amount = amount > 0 ? amount : null;
+        }
+        if (input.note !== undefined) approval.note = asString(input.note);
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.approvals.some((approval) => approval.id === id)) {
+          throw new Error('Onay bulunamadı.');
+        }
+        state.approvals = state.approvals.filter((approval) => approval.id !== id);
+        return writeState(state);
+      },
+      decide: async (id, status) => {
+        const state = readState();
+        const approval = state.approvals.find((item) => item.id === id);
+        if (!approval) throw new Error('Onay bulunamadı.');
+        approval.status = status;
+        approval.decidedAt = Date.now();
         return writeState(state);
       },
     },

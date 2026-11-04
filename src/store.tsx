@@ -12,6 +12,7 @@ import { CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import type {
   AddConnectionInput,
   AppData,
+  ApprovalStatus,
   AssistantMessage,
   AssistantReply,
   AuthResult,
@@ -19,19 +20,25 @@ import type {
   UpdateProfileInput,
   UpdateSecurityInput,
   AssetTestInput,
+  CreateApprovalInput,
   CreateAssetInput,
   CreateCompanyInput,
+  CreateEmployeeInput,
   CreateFinanceInput,
   CreateNoteInput,
+  CreateProjectInput,
   CreateTaskInput,
   InitialPayload,
   LanguageCode,
   Meta,
   RatesPayload,
   TestResult,
+  UpdateApprovalInput,
   UpdateAssetInput,
   UpdateCompanyInput,
+  UpdateEmployeeInput,
   UpdateNoteInput,
+  UpdateProjectInput,
   UpdateSettingsInput,
   TranslationResult,
   UpdateCheck,
@@ -85,6 +92,19 @@ interface AppActions {
   deleteNote: (id: string) => Promise<boolean>;
   createFinance: (input: CreateFinanceInput) => Promise<boolean>;
   deleteFinance: (id: string) => Promise<boolean>;
+  createEmployee: (input: CreateEmployeeInput) => Promise<boolean>;
+  updateEmployee: (input: UpdateEmployeeInput) => Promise<boolean>;
+  deleteEmployee: (id: string) => Promise<boolean>;
+  createProject: (input: CreateProjectInput) => Promise<boolean>;
+  updateProject: (input: UpdateProjectInput) => Promise<boolean>;
+  deleteProject: (id: string) => Promise<boolean>;
+  createApproval: (input: CreateApprovalInput) => Promise<boolean>;
+  updateApproval: (input: UpdateApprovalInput) => Promise<boolean>;
+  deleteApproval: (id: string) => Promise<boolean>;
+  decideApproval: (
+    id: string,
+    status: Exclude<ApprovalStatus, 'pending'>,
+  ) => Promise<boolean>;
   updateSettings: (input: UpdateSettingsInput) => Promise<boolean>;
   addYoutubeKey: (label: string, key: string) => Promise<boolean>;
   removeYoutubeKey: (id: string) => Promise<boolean>;
@@ -391,6 +411,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
       deleteNote: (id) => runMutation(() => api().note.remove(id), 'Not silindi.'),
       createFinance: (input) => runMutation(() => api().finance.create(input), 'Kayıt eklendi.'),
       deleteFinance: (id) => runMutation(() => api().finance.remove(id), 'Kayıt silindi.'),
+      createEmployee: (input) =>
+        runMutation(() => api().employee.create(input), 'Çalışan eklendi'),
+      updateEmployee: (input) =>
+        runMutation(() => api().employee.update(input), 'Çalışan güncellendi'),
+      deleteEmployee: (id) => runMutation(() => api().employee.remove(id), 'Çalışan silindi'),
+      createProject: (input) =>
+        runMutation(() => api().project.create(input), 'Proje oluşturuldu'),
+      updateProject: (input) =>
+        runMutation(() => api().project.update(input), 'Proje güncellendi'),
+      deleteProject: (id) => runMutation(() => api().project.remove(id), 'Proje silindi'),
+      createApproval: (input) =>
+        runMutation(() => api().approval.create(input), 'Onay talebi oluşturuldu'),
+      updateApproval: (input) =>
+        runMutation(() => api().approval.update(input), 'Onay talebi güncellendi'),
+      deleteApproval: (id) => runMutation(() => api().approval.remove(id), 'Onay talebi silindi'),
+      decideApproval: (id, status) =>
+        runMutation(
+          () => api().approval.decide(id, status),
+          status === 'approved' ? 'Talep onaylandı' : 'Talep reddedildi',
+        ),
       updateSettings: (input) => runMutation(() => api().settings.update(input)),
       addYoutubeKey: (label, key) =>
         runMutation(

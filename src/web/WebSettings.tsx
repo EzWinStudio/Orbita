@@ -36,6 +36,7 @@ const START_PAGES: { value: StartPage; label: TranslationKey }[] = [
   { value: 'services', label: 'Servisler' },
   { value: 'companies', label: 'Şirketler' },
   { value: 'finance', label: 'Finans' },
+  { value: 'operations', label: 'Operasyon' },
   { value: 'tasks', label: 'Görev & Notlar' },
   { value: 'tools', label: 'Hesap & Kur' },
 ];
