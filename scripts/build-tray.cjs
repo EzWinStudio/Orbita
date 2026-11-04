@@ -3,8 +3,8 @@ const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
-const version = '2.1.0';
-const version4 = '2.1.0.0';
+const version = '2.1.1';
+const version4 = '2.1.1.0';
 const sdkVersion = '1.0.4314.35';
 const trayRoot = path.join(root, 'tray');
 const webDist = path.join(root, 'web-dist');

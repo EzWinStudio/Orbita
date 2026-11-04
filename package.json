@@ -1,6 +1,6 @@
 {
   "name": "orbita",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": true,
   "description": "Orbita — kişisel şirket komuta merkezi",
   "author": "EzWin",
@@ -9,7 +9,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:web": "vite --config vite.web.config.mts",
     "build": "node scripts/gen-icon.cjs && node scripts/gen-installer-art.cjs && vite build",
-    "build:web": "node scripts/gen-web-icons.cjs && vite build --config vite.web.config.mts",
+    "build:web": "node scripts/gen-icon.cjs && node scripts/gen-web-icons.cjs && vite build --config vite.web.config.mts",
     "build:tray": "node scripts/build-tray.cjs",
     "preview:web": "vite preview --config vite.web.config.mts",
     "start": "electron .",

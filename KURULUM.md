@@ -18,7 +18,7 @@ Web verileri tarayıcıda kalır. Cihazlar arasında ortak veri için Ayarlar > 
 
 | | |
 | --- | --- |
-| Dosya | `Orbita-Setup-2.1.0.exe` |
+| Dosya | `Orbita-Setup-2.1.1.exe` |
 | İşletim sistemi | Windows 10 / 11, 64 bit |
 | Yetki | Yönetici izni istemez (kullanıcı klasörüne kurulur) |
 | Kurulum yeri | `%LOCALAPPDATA%\Programs\Orbita` |

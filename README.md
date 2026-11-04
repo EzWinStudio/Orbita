@@ -13,7 +13,7 @@ Bu depo, Orbita ekosistemindeki her şeyi tek yerden indirmek için hazırlandı
 | Canlı web uygulaması | [orbita.wasmer.app](https://orbita.wasmer.app) |
 | Windows kurulum sayfası | [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) |
 
-Kurulum paketi `Orbita-Setup-2.1.0.exe` adıyla sürüm sayfasına yüklenir. Premium kurulum sayfası [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) üzerinden doğrudan indirilebilir. Uygulama `%LOCALAPPDATA%\Programs\Orbita` klasörüne kurulur; mevcut EZWIN HUB verileri, yedekler ve bot sırları korunur.
+Kurulum paketi `Orbita-Setup-2.1.1.exe` adıyla sürüm sayfasına yüklenir. Premium kurulum sayfası [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) üzerinden doğrudan indirilebilir. Uygulama `%LOCALAPPDATA%\Programs\Orbita` klasörüne kurulur; mevcut EZWIN HUB verileri, yedekler ve bot sırları korunur.
 
 Kanıtlanmış eski adres [ezwin-hub.wasmer.app](https://ezwin-hub.wasmer.app) de aynı Orbita sürümünü sunar.
 
@@ -88,10 +88,6 @@ Web uygulaması telefonda tarayıcıdan açılır. Android/Chrome ve iPhone/Safa
 
 Ayarlar > **Cihaz eşitleme** bölümünden bir eşitleme kodu oluşturulur. Veriler AES-GCM ile şifrelenir; sunucu yalnızca şifreli paketi saklar. Aynı kod web, masaüstü ve telefonda girilerek ortak veriler kullanılır. Bot tokenları, şifreler ve cihaza özel görünüm ayarları eşitlenmez. Kod kaybolursa şifreli verilere erişilemez.
 
-## Hesaplar
-
-Aynı cihaza birden fazla yerel hesap eklenebilir. Giriş ekranındaki hesap listesinden istediğin hesabı seçip şifrenle giriş yaparsın; her hesabın çalışma alanı ayrıdır. Başka bir cihazdaki hesaba giriş yapmak için Ayarlar > Güvenlik > **Hesabı dışa aktar** ile hesap dosyasını indir, diğer cihazda **Hesap dosyası içe aktar** ile ekle. Hesap dosyası parola özeti içerir; gizli tutulmalıdır.
-
 `sync-service/` bu isteğe bağlı eşitleme servisinin kaynağıdır (Qoder Edge Function ve `sync_blobs` tablosu).
 
 ## Masaüstü uygulamasını derleme
@@ -106,8 +102,8 @@ npm run build:tray
 Çıktılar `release-artifacts-tray/` altında oluşur:
 
 - `Orbita.exe`
-- `Orbita-Setup-2.1.0.exe`
-- `Orbita-2.1.0-portable.zip`
+- `Orbita-Setup-2.1.1.exe`
+- `Orbita-2.1.1-portable.zip`
 
 ## Güvenlik ve veri
 
