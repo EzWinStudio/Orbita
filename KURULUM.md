@@ -18,8 +18,10 @@ Web verileri tarayıcıda kalır. Cihazlar arasında ortak veri için Ayarlar > 
 
 | | |
 | --- | --- |
-| Dosya | `Orbita-Setup-2.1.1.exe` |
+| Dosya | `Orbita-Setup-2.2.0.exe` |
 | İşletim sistemi | Windows 10 / 11, 64 bit |
+| Çalışma zamanı | Gömülü Chromium (Electron) — harici WebView2 gerekmez |
+| Disk alanı | yaklaşık 360 MB |
 | Yetki | Yönetici izni istemez (kullanıcı klasörüne kurulur) |
 | Kurulum yeri | `%LOCALAPPDATA%\Programs\Orbita` |
 
@@ -32,11 +34,11 @@ Mevcut veriler şurada kalır:
 Documents\EZWIN HUB\Yedekler
 ```
 
-Bu klasörler ürün adı değişse de silinmez; WebView2 profili, DPAPI ile şifrelenmiş bot sırları ve yedekler buradan okunur.
+Bu klasörler ürün adı değişse de silinmez; mevcut WebView2 profili ilk açılışta yeni Electron profiline otomatik taşınır. DPAPI ile şifrelenmiş bot sırları ve yedekler buradan okunur.
 
 ## Güncelleme
 
-Yeni sürümler [GitHub Releases](https://github.com/EzWinStudio/ezwin-hub-app/releases/latest) sayfasına yüklenir. Kurulum dosyasını indirip çalıştırmak yeterlidir; veriler korunur.
+Yeni sürümler [GitHub Releases](https://github.com/EzWinStudio/ezwin-hub-app/releases/latest) sayfasına yüklenir. Orbita altı saatte bir güncellemeyi kontrol eder; hazır olduğunda tepsi menüsünden tek tıkla kurabilirsin. Kurulum dosyasını indirip çalıştırmak da yeterlidir; veriler korunur.
 
 ## Kaldırma
 

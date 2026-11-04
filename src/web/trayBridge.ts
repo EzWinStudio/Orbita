@@ -58,10 +58,14 @@ export function onTrayHostMessage(handler: (message: TrayHostMessage) => void): 
       handler(parsed as TrayHostMessage);
     }
   };
+  if (typeof host.onMessage === 'function') {
+    return host.onMessage(listener);
+  }
+  if (typeof host.addEventListener !== 'function') return () => {};
   host.addEventListener('message', listener);
   return () => {
     try {
-      host.removeEventListener('message', listener);
+      host.removeEventListener?.('message', listener);
     } catch {
       /* host is going away */
     }

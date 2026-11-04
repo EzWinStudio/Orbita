@@ -1,25 +1,23 @@
 {
   "name": "orbita",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "private": true,
   "description": "Orbita — kişisel şirket komuta merkezi",
   "author": "EzWin",
-  "main": "electron/main.cjs",
+  "main": "electron/orbita-shell.cjs",
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:web": "vite --config vite.web.config.mts",
     "build": "node scripts/gen-icon.cjs && node scripts/gen-installer-art.cjs && vite build",
     "build:web": "node scripts/gen-icon.cjs && node scripts/gen-web-icons.cjs && vite build --config vite.web.config.mts",
     "build:tray": "node scripts/build-tray.cjs",
+    "build:electron": "npm run build:web && electron-builder --win nsis",
+    "pack:electron": "npm run build:web && electron-builder --win --dir",
     "preview:web": "vite preview --config vite.web.config.mts",
     "start": "electron .",
     "typecheck": "tsc --noEmit",
-    "dist": "npm run build && electron-builder --win",
-    "pack": "npm run build && electron-builder --win --dir"
-  },
-  "dependencies": {
-    "html-to-text": "^10.0.1",
-    "imapflow": "^2.10.0"
+    "dist": "npm run build:electron",
+    "pack": "npm run pack:electron"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
@@ -27,6 +25,8 @@
     "@vitejs/plugin-react": "^6.1.2",
     "electron": "^45.2.1",
     "electron-builder": "^26.18.0",
+    "html-to-text": "^10.0.1",
+    "imapflow": "^2.10.0",
     "lucide-react": "^1.66.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -35,17 +35,22 @@
     "vite": "^8.3.5"
   },
   "build": {
-    "appId": "com.ezwin.hub",
+    "appId": "com.ezwin.orbita",
     "productName": "Orbita",
     "executableName": "Orbita",
     "copyright": "© 2026 EZWIN",
     "directories": {
-      "output": "release-artifacts",
+      "output": "release-artifacts-electron",
       "buildResources": "build"
     },
+    "electronDist": "node_modules/electron/dist",
     "files": [
-      "dist/**/*",
-      "electron/**/*",
+      "web-dist/**/*",
+      "!web-dist/download/**",
+      "!web-dist/indir/**",
+      "electron/orbita-shell.cjs",
+      "electron/preload-shell.cjs",
+      "electron/assets/icon.png",
       "package.json"
     ],
     "asar": true,
@@ -74,6 +79,7 @@
       "installerSidebar": "build/installer-sidebar.bmp",
       "uninstallerSidebar": "build/installer-sidebar.bmp",
       "installerHeader": "build/installer-header.bmp",
+      "include": "installer/electron.nsh",
       "multiLanguageInstaller": true,
       "installerLanguages": [
         "tr_TR",
