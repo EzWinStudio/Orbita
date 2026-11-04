@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
 import {
+  Building2,
   CalendarDays,
   Check,
   CheckCircle2,
   FolderKanban,
+  Info,
   Plus,
   ShieldCheck,
+  Star,
   Users,
   X,
   XCircle,
@@ -16,19 +19,32 @@ import { EmptyState } from '../components/EmptyState';
 import { CompanyChip } from '../components/CompanyChip';
 import { ProjectModal } from '../modals/ProjectModal';
 import { EmployeeModal } from '../modals/EmployeeModal';
+import { EmployeeProfileModal } from '../modals/EmployeeProfileModal';
 import { ApprovalModal } from '../modals/ApprovalModal';
+import { DepartmentModal } from '../modals/DepartmentModal';
+import { RoleModal } from '../modals/RoleModal';
+import { PerformanceReviewModal } from '../modals/PerformanceReviewModal';
 import { useApp, useAppData } from '../store';
 import { useI18n } from '../i18n';
 import {
   APPROVAL_STATUS_LABEL,
   EMPLOYEE_STATUS_LABEL,
+  PERMISSION_KEYS,
+  PERMISSION_LABEL,
   PROJECT_STATUS_LABEL,
 } from '../constants';
 import { formatDate, formatMoney, relativeTime, todayISO } from '../lib/format';
-import type { Approval, Employee, Project } from '../types';
+import type {
+  Approval,
+  Department,
+  Employee,
+  PerformanceReview,
+  Project,
+  Role,
+} from '../types';
 import type { Page } from '../nav';
 
-type OpsTab = 'projects' | 'team' | 'approvals';
+type OpsTab = 'projects' | 'team' | 'departments' | 'roles' | 'approvals';
 
 const PROJECT_ORDER: Record<Project['status'], number> = {
   active: 0,
@@ -41,6 +57,13 @@ const EMPLOYEE_ORDER: Record<Employee['status'], number> = {
   on_leave: 1,
   inactive: 2,
 };
+
+function scoreTone(score: number | null): 'high' | 'mid' | 'low' | 'none' {
+  if (score == null) return 'none';
+  if (score >= 85) return 'high';
+  if (score >= 70) return 'mid';
+  return 'low';
+}
 
 interface OperationsProps {
   navigate: (page: Page, companyId?: string | null) => void;
@@ -59,6 +82,14 @@ export function Operations({ navigate }: OperationsProps) {
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [editingApproval, setEditingApproval] = useState<Approval | null>(null);
   const [decidingId, setDecidingId] = useState<string | null>(null);
+  const [departmentModalOpen, setDepartmentModalOpen] = useState(false);
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [profileEmployeeId, setProfileEmployeeId] = useState<string | null>(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewEmployee, setReviewEmployee] = useState<Employee | null>(null);
+  const [editingReview, setEditingReview] = useState<PerformanceReview | null>(null);
 
   const currency = data.settings.currency;
   const today = todayISO();
@@ -98,6 +129,22 @@ export function Operations({ navigate }: OperationsProps) {
     [data.employees, companyFilter, locale],
   );
 
+  const departments = useMemo(
+    () =>
+      data.departments
+        .filter((department) => companyFilter === 'all' || department.companyId === companyFilter)
+        .sort((a, b) => a.name.localeCompare(b.name, locale)),
+    [data.departments, companyFilter, locale],
+  );
+
+  const roles = useMemo(
+    () =>
+      data.roles
+        .filter((role) => companyFilter === 'all' || role.companyId === companyFilter)
+        .sort((a, b) => a.name.localeCompare(b.name, locale)),
+    [data.roles, companyFilter, locale],
+  );
+
   const approvals = useMemo(
     () =>
       data.approvals
@@ -109,6 +156,58 @@ export function Operations({ navigate }: OperationsProps) {
         }),
     [data.approvals, companyFilter],
   );
+
+  const departmentById = useMemo(
+    () => new Map(data.departments.map((department) => [department.id, department])),
+    [data.departments],
+  );
+
+  const roleById = useMemo(() => new Map(data.roles.map((role) => [role.id, role])), [data.roles]);
+
+  const scoresByEmployee = useMemo(() => {
+    const totals = new Map<string, { sum: number; count: number }>();
+    for (const review of data.performanceReviews) {
+      const entry = totals.get(review.employeeId) ?? { sum: 0, count: 0 };
+      entry.sum += review.score;
+      entry.count += 1;
+      totals.set(review.employeeId, entry);
+    }
+    const scores = new Map<string, number>();
+    for (const [employeeId, entry] of totals) {
+      scores.set(employeeId, Math.round(entry.sum / entry.count));
+    }
+    return scores;
+  }, [data.performanceReviews]);
+
+  const scopedReviews = useMemo(
+    () =>
+      data.performanceReviews.filter(
+        (review) => companyFilter === 'all' || review.companyId === companyFilter,
+      ),
+    [data.performanceReviews, companyFilter],
+  );
+
+  const departmentMembers = useMemo(() => {
+    const members = new Map<string, Employee[]>();
+    for (const employee of data.employees) {
+      if (!employee.departmentId) continue;
+      const list = members.get(employee.departmentId) ?? [];
+      list.push(employee);
+      members.set(employee.departmentId, list);
+    }
+    return members;
+  }, [data.employees]);
+
+  const roleMembers = useMemo(() => {
+    const members = new Map<string, Employee[]>();
+    for (const employee of data.employees) {
+      if (!employee.roleId) continue;
+      const list = members.get(employee.roleId) ?? [];
+      list.push(employee);
+      members.set(employee.roleId, list);
+    }
+    return members;
+  }, [data.employees]);
 
   const activeProjects = projects.filter((project) => project.status === 'active');
   const completedProjects = projects.filter((project) => project.status === 'completed');
@@ -123,11 +222,44 @@ export function Operations({ navigate }: OperationsProps) {
   const onLeaveEmployees = employees.filter((employee) => employee.status === 'on_leave');
   const inactiveEmployees = employees.filter((employee) => employee.status === 'inactive');
 
+  const reviewedEmployees = employees.filter((employee) => scoresByEmployee.has(employee.id));
+  const teamAverage = reviewedEmployees.length
+    ? Math.round(
+        reviewedEmployees.reduce(
+          (sum, employee) => sum + (scoresByEmployee.get(employee.id) ?? 0),
+          0,
+        ) / reviewedEmployees.length,
+      )
+    : null;
+
+  const assignedDepartmentCount = departments.filter(
+    (department) => (departmentMembers.get(department.id)?.length ?? 0) > 0,
+  ).length;
+  const emptyDepartmentCount = departments.length - assignedDepartmentCount;
+  const assignedDepartmentEmployees = employees.filter(
+    (employee) => employee.departmentId && departmentById.has(employee.departmentId),
+  ).length;
+  const unassignedEmployees = employees.filter(
+    (employee) => !employee.departmentId || !departmentById.has(employee.departmentId),
+  ).length;
+
+  const assignedRoleCount = roles.filter(
+    (role) => (roleMembers.get(role.id)?.length ?? 0) > 0,
+  ).length;
+  const assignedRoleEmployees = employees.filter(
+    (employee) => employee.roleId && roleById.has(employee.roleId),
+  ).length;
+  const usedPermissionCount = new Set(roles.flatMap((role) => role.permissions)).size;
+
   const pendingApprovals = approvals.filter((approval) => approval.status === 'pending');
   const approvedApprovals = approvals.filter((approval) => approval.status === 'approved');
   const rejectedApprovals = approvals.filter((approval) => approval.status === 'rejected');
 
   const canAdd = data.companies.length > 0;
+
+  const profileEmployee = profileEmployeeId
+    ? data.employees.find((employee) => employee.id === profileEmployeeId) ?? null
+    : null;
 
   const openNew = () => {
     if (tab === 'projects') {
@@ -136,6 +268,12 @@ export function Operations({ navigate }: OperationsProps) {
     } else if (tab === 'team') {
       setEditingEmployee(null);
       setEmployeeModalOpen(true);
+    } else if (tab === 'departments') {
+      setEditingDepartment(null);
+      setDepartmentModalOpen(true);
+    } else if (tab === 'roles') {
+      setEditingRole(null);
+      setRoleModalOpen(true);
     } else {
       setEditingApproval(null);
       setApprovalModalOpen(true);
@@ -147,9 +285,36 @@ export function Operations({ navigate }: OperationsProps) {
     setProjectModalOpen(true);
   };
 
-  const openEmployee = (employee: Employee) => {
+  const openProfile = (employee: Employee) => {
+    setProfileEmployeeId(employee.id);
+  };
+
+  const editProfile = (employee: Employee) => {
+    setProfileEmployeeId(null);
     setEditingEmployee(employee);
     setEmployeeModalOpen(true);
+  };
+
+  const addReview = (employee: Employee) => {
+    setReviewEmployee(employee);
+    setEditingReview(null);
+    setReviewModalOpen(true);
+  };
+
+  const editReview = (review: PerformanceReview, employee: Employee) => {
+    setReviewEmployee(employee);
+    setEditingReview(review);
+    setReviewModalOpen(true);
+  };
+
+  const openDepartment = (department: Department) => {
+    setEditingDepartment(department);
+    setDepartmentModalOpen(true);
+  };
+
+  const openRole = (role: Role) => {
+    setEditingRole(role);
+    setRoleModalOpen(true);
   };
 
   const openApproval = (approval: Approval) => {
@@ -173,7 +338,15 @@ export function Operations({ navigate }: OperationsProps) {
   };
 
   const addLabel =
-    tab === 'projects' ? t('Proje ekle') : tab === 'team' ? t('Çalışan ekle') : t('Talep oluştur');
+    tab === 'projects'
+      ? t('Proje ekle')
+      : tab === 'team'
+        ? t('Çalışan ekle')
+        : tab === 'departments'
+          ? t('Departman ekle')
+          : tab === 'roles'
+            ? t('Rol ekle')
+            : t('Talep oluştur');
 
   const initialsOf = (name: string) =>
     name
@@ -189,7 +362,7 @@ export function Operations({ navigate }: OperationsProps) {
       <PageHeader
         eyebrow={t('İşletme')}
         title={t('Operasyon')}
-        subtitle={t('Projeleri, ekibi ve onay taleplerini tek yerden yönet. Her kayıt bir şirkete bağlanır.')}
+        subtitle={t('Projeleri, ekibi, departmanları ve onay taleplerini tek yerden yönet. Her kayıt bir şirkete bağlanır.')}
         actions={
           <button type="button" className="btn btn-primary" onClick={openNew} disabled={!canAdd}>
             <Plus size={15} /> {addLabel}
@@ -231,6 +404,24 @@ export function Operations({ navigate }: OperationsProps) {
                 onClick={() => setTab('team')}
               >
                 {t('Ekip')} <span className="ops-tab-count">{employees.length}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab === 'departments'}
+                className={`segment ${tab === 'departments' ? 'active' : ''}`}
+                onClick={() => setTab('departments')}
+              >
+                {t('Departmanlar')} <span className="ops-tab-count">{departments.length}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab === 'roles'}
+                className={`segment ${tab === 'roles' ? 'active' : ''}`}
+                onClick={() => setTab('roles')}
+              >
+                {t('Roller')} <span className="ops-tab-count">{roles.length}</span>
               </button>
               <button
                 type="button"
@@ -376,15 +567,23 @@ export function Operations({ navigate }: OperationsProps) {
                   icon={<CalendarDays size={16} />}
                   tone={onLeaveEmployees.length ? 'amber' : 'default'}
                 />
+                <KpiCard
+                  label={t('Ortalama performans')}
+                  value={teamAverage == null ? '—' : `${teamAverage}`}
+                  hint={t('{count} çalışan değerlendirildi', { count: reviewedEmployees.length })}
+                  icon={<Star size={16} />}
+                  tone={teamAverage == null ? 'default' : scoreTone(teamAverage) === 'low' ? 'danger' : 'mint'}
+                />
               </div>
 
               <section className="card">
                 <div className="card-header">
                   <div>
                     <h2>{t('Ekip')}</h2>
-                    <p>{t('{count} çalışan · {companies} şirket', {
+                    <p>{t('{count} çalışan · {departments} departman · {reviews} değerlendirme', {
                       count: employees.length,
-                      companies: new Set(employees.map((employee) => employee.companyId)).size,
+                      departments: departments.length,
+                      reviews: scopedReviews.length,
                     })}</p>
                   </div>
                 </div>
@@ -411,18 +610,23 @@ export function Operations({ navigate }: OperationsProps) {
                   <div className="employee-table">
                     <div className="employee-table-head">
                       <span>{t('Çalışan')}</span>
+                      <span>{t('Departman')}</span>
                       <span>{t('Şirket')}</span>
+                      <span>{t('Performans')}</span>
                       <span>{t('Durum')}</span>
-                      <span>{t('Başlangıç tarihi')}</span>
                     </div>
                     {employees.map((employee) => {
                       const company = companyById.get(employee.companyId);
+                      const department = employee.departmentId
+                        ? departmentById.get(employee.departmentId)
+                        : undefined;
+                      const score = scoresByEmployee.get(employee.id) ?? null;
                       return (
                         <button
                           type="button"
                           className="employee-row"
                           key={employee.id}
-                          onClick={() => openEmployee(employee)}
+                          onClick={() => openProfile(employee)}
                         >
                           <span className="employee-identity">
                             <span className="employee-avatar">{initialsOf(employee.name)}</span>
@@ -431,15 +635,243 @@ export function Operations({ navigate }: OperationsProps) {
                               <span>{employee.role || t('Rol belirtilmedi')}</span>
                             </span>
                           </span>
+                          <span className="employee-department">
+                            {department ? (
+                              <>
+                                <span
+                                  className="department-dot"
+                                  style={{ background: department.color }}
+                                  aria-hidden="true"
+                                />
+                                {department.name}
+                              </>
+                            ) : (
+                              <span className="employee-muted">{t('Departmansız')}</span>
+                            )}
+                          </span>
                           <span className="employee-company">
                             <CompanyChip company={company} />
+                          </span>
+                          <span className={`employee-score score-${scoreTone(score)}`}>
+                            <Star size={12} />
+                            {score == null ? '—' : score}
                           </span>
                           <span className={`ops-status ops-status-${employee.status}`}>
                             {t(EMPLOYEE_STATUS_LABEL[employee.status])}
                           </span>
-                          <span className="employee-start">
-                            {employee.startDate ? formatDate(employee.startDate) : '—'}
-                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </>
+          ) : null}
+
+          {tab === 'departments' ? (
+            <>
+              <div className="kpi-grid ops-kpi-grid">
+                <KpiCard
+                  label={t('Toplam departman')}
+                  value={departments.length}
+                  hint={t('{count} çalışan atandı', { count: assignedDepartmentEmployees })}
+                  icon={<Building2 size={16} />}
+                />
+                <KpiCard
+                  label={t('Boş departman')}
+                  value={emptyDepartmentCount}
+                  hint={t('Çalışan atanmamış departman')}
+                  icon={<FolderKanban size={16} />}
+                  tone={emptyDepartmentCount ? 'amber' : 'default'}
+                />
+                <KpiCard
+                  label={t('Departmansız çalışan')}
+                  value={unassignedEmployees}
+                  hint={t('Departman ataması bekliyor')}
+                  icon={<Users size={16} />}
+                  tone={unassignedEmployees ? 'amber' : 'default'}
+                />
+              </div>
+
+              <section className="card">
+                <div className="card-header">
+                  <div>
+                    <h2>{t('Departmanlar')}</h2>
+                    <p>{t('{count} departman · {assigned} çalışan atandı', {
+                      count: departments.length,
+                      assigned: assignedDepartmentEmployees,
+                    })}</p>
+                  </div>
+                </div>
+                {departments.length === 0 ? (
+                  <EmptyState
+                    compact
+                    icon={<Building2 size={18} />}
+                    title={t('Departman yok')}
+                    description={t('İlk departmanı oluştur; ekibi yapıya göre ayır.')}
+                    action={
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => {
+                          setEditingDepartment(null);
+                          setDepartmentModalOpen(true);
+                        }}
+                      >
+                        <Plus size={14} /> {t('Departman ekle')}
+                      </button>
+                    }
+                  />
+                ) : (
+                  <div className="department-grid">
+                    {departments.map((department) => {
+                      const members = (departmentMembers.get(department.id) ?? [])
+                        .slice()
+                        .sort((a, b) => a.name.localeCompare(b.name, locale));
+                      const company = companyById.get(department.companyId);
+                      return (
+                        <button
+                          type="button"
+                          className="department-card"
+                          key={department.id}
+                          onClick={() => openDepartment(department)}
+                        >
+                          <div className="department-card-top">
+                            <span
+                              className="department-dot"
+                              style={{ background: department.color }}
+                              aria-hidden="true"
+                            />
+                            <strong>{department.name}</strong>
+                            <span className="department-count">
+                              {t('{count} çalışan', { count: members.length })}
+                            </span>
+                          </div>
+                          <p>{department.description || t('Açıklama yok')}</p>
+                          <div className="department-card-footer">
+                            {members.length ? (
+                              <span className="department-avatars">
+                                {members.slice(0, 3).map((member) => (
+                                  <span className="department-avatar" key={member.id}>
+                                    {initialsOf(member.name)}
+                                  </span>
+                                ))}
+                                {members.length > 3 ? (
+                                  <span className="department-avatar department-avatar-more">
+                                    +{members.length - 3}
+                                  </span>
+                                ) : null}
+                              </span>
+                            ) : (
+                              <span className="employee-muted">{t('Çalışan atanmamış departman')}</span>
+                            )}
+                            <CompanyChip company={company} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </>
+          ) : null}
+
+          {tab === 'roles' ? (
+            <>
+              <div className="kpi-grid ops-kpi-grid">
+                <KpiCard
+                  label={t('Toplam rol')}
+                  value={roles.length}
+                  hint={t('{count} rol tanımlı', { count: assignedRoleCount })}
+                  icon={<ShieldCheck size={16} />}
+                />
+                <KpiCard
+                  label={t('Atanmış çalışan')}
+                  value={assignedRoleEmployees}
+                  hint={t('Yetki rolü olan çalışan')}
+                  icon={<Users size={16} />}
+                  tone={assignedRoleEmployees ? 'mint' : 'default'}
+                />
+                <KpiCard
+                  label={t('Tanımlı izin alanı')}
+                  value={`${usedPermissionCount}/${PERMISSION_KEYS.length}`}
+                  hint={t('8 alanın {count} tanesi tanımlı', { count: usedPermissionCount })}
+                  icon={<ShieldCheck size={16} />}
+                />
+              </div>
+
+              <section className="card">
+                <div className="card-header">
+                  <div>
+                    <h2>{t('Roller')}</h2>
+                    <p>{t('{count} rol · {assigned} çalışan atandı', {
+                      count: roles.length,
+                      assigned: assignedRoleEmployees,
+                    })}</p>
+                  </div>
+                </div>
+                <p className="role-note">
+                  <Info size={14} />
+                  {t('Yetki rolleri ekip organizasyonu içindir; bu cihazdaki oturum erişimini kısıtlamaz.')}
+                </p>
+                {roles.length === 0 ? (
+                  <EmptyState
+                    compact
+                    icon={<ShieldCheck size={18} />}
+                    title={t('Rol yok')}
+                    description={t('İlk yetki rolünü oluştur; ekip için izin kapsamını tanımla.')}
+                    action={
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => {
+                          setEditingRole(null);
+                          setRoleModalOpen(true);
+                        }}
+                      >
+                        <Plus size={14} /> {t('Rol ekle')}
+                      </button>
+                    }
+                  />
+                ) : (
+                  <div className="role-grid">
+                    {roles.map((role) => {
+                      const members = roleMembers.get(role.id) ?? [];
+                      const company = companyById.get(role.companyId);
+                      return (
+                        <button
+                          type="button"
+                          className="role-card"
+                          key={role.id}
+                          onClick={() => openRole(role)}
+                        >
+                          <div className="role-card-top">
+                            <span className="role-icon">
+                              <ShieldCheck size={15} />
+                            </span>
+                            <strong>{role.name}</strong>
+                            <span className="department-count">
+                              {t('{count} yetki', { count: role.permissions.length })}
+                            </span>
+                          </div>
+                          <p>{role.description || t('Açıklama yok')}</p>
+                          {role.permissions.length ? (
+                            <div className="role-permissions">
+                              {role.permissions.map((permission) => (
+                                <span className="permission-chip" key={permission}>
+                                  {t(PERMISSION_LABEL[permission])}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="employee-muted">{t('Yetki seçilmedi')}</span>
+                          )}
+                          <div className="department-card-footer">
+                            <span className="department-count">
+                              {t('{count} çalışan', { count: members.length })}
+                            </span>
+                            <CompanyChip company={company} />
+                          </div>
                         </button>
                       );
                     })}
@@ -580,6 +1012,32 @@ export function Operations({ navigate }: OperationsProps) {
         onClose={() => setEmployeeModalOpen(false)}
         employee={editingEmployee}
         defaultCompanyId={defaultCompanyId}
+      />
+      <EmployeeProfileModal
+        open={profileEmployee != null}
+        onClose={() => setProfileEmployeeId(null)}
+        employee={profileEmployee}
+        onEdit={editProfile}
+        onAddReview={addReview}
+        onEditReview={editReview}
+      />
+      <DepartmentModal
+        open={departmentModalOpen}
+        onClose={() => setDepartmentModalOpen(false)}
+        department={editingDepartment}
+        defaultCompanyId={defaultCompanyId}
+      />
+      <RoleModal
+        open={roleModalOpen}
+        onClose={() => setRoleModalOpen(false)}
+        role={editingRole}
+        defaultCompanyId={defaultCompanyId}
+      />
+      <PerformanceReviewModal
+        open={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        employee={reviewEmployee}
+        review={editingReview}
       />
       <ApprovalModal
         open={approvalModalOpen}

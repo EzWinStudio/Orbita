@@ -23,10 +23,13 @@ import type {
   CreateApprovalInput,
   CreateAssetInput,
   CreateCompanyInput,
+  CreateDepartmentInput,
   CreateEmployeeInput,
   CreateFinanceInput,
   CreateNoteInput,
+  CreatePerformanceReviewInput,
   CreateProjectInput,
+  CreateRoleInput,
   CreateTaskInput,
   InitialPayload,
   LanguageCode,
@@ -36,9 +39,12 @@ import type {
   UpdateApprovalInput,
   UpdateAssetInput,
   UpdateCompanyInput,
+  UpdateDepartmentInput,
   UpdateEmployeeInput,
   UpdateNoteInput,
+  UpdatePerformanceReviewInput,
   UpdateProjectInput,
+  UpdateRoleInput,
   UpdateSettingsInput,
   TranslationResult,
   UpdateCheck,
@@ -95,6 +101,15 @@ interface AppActions {
   createEmployee: (input: CreateEmployeeInput) => Promise<boolean>;
   updateEmployee: (input: UpdateEmployeeInput) => Promise<boolean>;
   deleteEmployee: (id: string) => Promise<boolean>;
+  createDepartment: (input: CreateDepartmentInput) => Promise<boolean>;
+  updateDepartment: (input: UpdateDepartmentInput) => Promise<boolean>;
+  deleteDepartment: (id: string) => Promise<boolean>;
+  createRole: (input: CreateRoleInput) => Promise<boolean>;
+  updateRole: (input: UpdateRoleInput) => Promise<boolean>;
+  deleteRole: (id: string) => Promise<boolean>;
+  createPerformanceReview: (input: CreatePerformanceReviewInput) => Promise<boolean>;
+  updatePerformanceReview: (input: UpdatePerformanceReviewInput) => Promise<boolean>;
+  deletePerformanceReview: (id: string) => Promise<boolean>;
   createProject: (input: CreateProjectInput) => Promise<boolean>;
   updateProject: (input: UpdateProjectInput) => Promise<boolean>;
   deleteProject: (id: string) => Promise<boolean>;
@@ -416,6 +431,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateEmployee: (input) =>
         runMutation(() => api().employee.update(input), 'Çalışan güncellendi'),
       deleteEmployee: (id) => runMutation(() => api().employee.remove(id), 'Çalışan silindi'),
+      createDepartment: (input) =>
+        runMutation(() => api().department.create(input), 'Departman oluşturuldu'),
+      updateDepartment: (input) =>
+        runMutation(() => api().department.update(input), 'Departman güncellendi'),
+      deleteDepartment: (id) =>
+        runMutation(() => api().department.remove(id), 'Departman silindi'),
+      createRole: (input) => runMutation(() => api().role.create(input), 'Rol oluşturuldu'),
+      updateRole: (input) => runMutation(() => api().role.update(input), 'Rol güncellendi'),
+      deleteRole: (id) => runMutation(() => api().role.remove(id), 'Rol silindi'),
+      createPerformanceReview: (input) =>
+        runMutation(() => api().performanceReview.create(input), 'Değerlendirme eklendi'),
+      updatePerformanceReview: (input) =>
+        runMutation(() => api().performanceReview.update(input), 'Değerlendirme güncellendi'),
+      deletePerformanceReview: (id) =>
+        runMutation(() => api().performanceReview.remove(id), 'Değerlendirme silindi'),
       createProject: (input) =>
         runMutation(() => api().project.create(input), 'Proje oluşturuldu'),
       updateProject: (input) =>

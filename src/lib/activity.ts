@@ -1,7 +1,7 @@
 import type { AppData } from '../types';
 import type { Page } from '../nav';
 import type { TFunction } from '../i18n/core';
-import { formatMoney } from './format';
+import { formatMoney, monthLabel } from './format';
 
 export type ActivityKind =
   | 'company'
@@ -14,6 +14,9 @@ export type ActivityKind =
   | 'project'
   | 'project_done'
   | 'employee'
+  | 'department'
+  | 'role'
+  | 'review'
   | 'approval'
   | 'approval_approved'
   | 'approval_rejected';
@@ -147,6 +150,57 @@ export function buildActivity(data: AppData, t: TFunction, limit = 8): ActivityI
           : t('Çalışan eklendi'),
       meta: [employee.name, employee.role].filter(Boolean).join(' · '),
       companyId: employee.companyId,
+      page: 'operations',
+    });
+  }
+
+  for (const department of data.departments) {
+    items.push({
+      id: `department-${department.id}`,
+      kind: 'department',
+      tone: 'default',
+      at: department.updatedAt,
+      title:
+        department.updatedAt > department.createdAt + 1000
+          ? t('Departman güncellendi')
+          : t('Departman oluşturuldu'),
+      meta: `${department.name} · ${companyName.get(department.companyId) ?? t('Şirketsiz')}`,
+      companyId: department.companyId,
+      page: 'operations',
+    });
+  }
+
+  for (const role of data.roles) {
+    items.push({
+      id: `role-${role.id}`,
+      kind: 'role',
+      tone: 'default',
+      at: role.updatedAt,
+      title:
+        role.updatedAt > role.createdAt + 1000
+          ? t('Rol güncellendi')
+          : t('Rol oluşturuldu'),
+      meta: `${role.name} · ${companyName.get(role.companyId) ?? t('Şirketsiz')}`,
+      companyId: role.companyId,
+      page: 'operations',
+    });
+  }
+
+  const employeeName = new Map(data.employees.map((employee) => [employee.id, employee.name]));
+  for (const review of data.performanceReviews) {
+    items.push({
+      id: `review-${review.id}`,
+      kind: 'review',
+      tone: 'mint',
+      at: review.updatedAt,
+      title:
+        review.updatedAt > review.createdAt + 1000
+          ? t('Değerlendirme güncellendi')
+          : t('Değerlendirme eklendi'),
+      meta: [employeeName.get(review.employeeId), monthLabel(review.period)]
+        .filter(Boolean)
+        .join(' · '),
+      companyId: review.companyId,
       page: 'operations',
     });
   }

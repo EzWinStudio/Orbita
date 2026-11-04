@@ -6,6 +6,7 @@ import type {
   CompanyStatus,
   Currency,
   EmployeeStatus,
+  PermissionKey,
   ProjectStatus,
   ServiceState,
 } from './types';
@@ -55,6 +56,30 @@ export const EMPLOYEE_STATUS_LABEL: Record<EmployeeStatus, TranslationKey> = {
   on_leave: 'İzinde',
   inactive: 'Pasif',
 };
+
+export const PERMISSION_KEYS: PermissionKey[] = [
+  'companies',
+  'services',
+  'finance',
+  'projects',
+  'team',
+  'approvals',
+  'tasks',
+  'settings',
+];
+
+export const PERMISSION_LABEL: Record<PermissionKey, TranslationKey> = {
+  companies: 'Şirketler',
+  services: 'Servisler',
+  finance: 'Finans',
+  projects: 'Projeler',
+  team: 'Ekip',
+  approvals: 'Onaylar',
+  tasks: 'Görev & Notlar',
+  settings: 'Ayarlar',
+};
+
+export const DEPARTMENT_COLORS = COMPANY_COLORS;
 
 export const PROJECT_STATUSES: ProjectStatus[] = ['active', 'paused', 'completed'];
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, TranslationKey> = {

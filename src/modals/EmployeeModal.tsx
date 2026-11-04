@@ -20,6 +20,9 @@ export function EmployeeModal({ open, onClose, employee, defaultCompanyId }: Emp
   const [role, setRole] = useState('');
   const [email, setEmail] = useState('');
   const [companyId, setCompanyId] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [roleId, setRoleId] = useState('');
+  const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<EmployeeStatus>('active');
   const [startDate, setStartDate] = useState('');
   const [busy, setBusy] = useState(false);
@@ -32,6 +35,9 @@ export function EmployeeModal({ open, onClose, employee, defaultCompanyId }: Emp
     setRole(employee?.role ?? '');
     setEmail(employee?.email ?? '');
     setCompanyId(employee?.companyId ?? defaultCompanyId ?? data?.companies[0]?.id ?? '');
+    setDepartmentId(employee?.departmentId ?? '');
+    setRoleId(employee?.roleId ?? '');
+    setNotes(employee?.notes ?? '');
     setStatus(employee?.status ?? 'active');
     setStartDate(employee?.startDate ?? '');
     setBusy(false);
@@ -39,7 +45,28 @@ export function EmployeeModal({ open, onClose, employee, defaultCompanyId }: Emp
     window.setTimeout(() => nameRef.current?.focus(), 30);
   }, [open, employee, defaultCompanyId, data?.companies]);
 
+  const departments = (data?.departments ?? []).filter(
+    (department) => department.companyId === companyId,
+  );
+  const roles = (data?.roles ?? []).filter((item) => item.companyId === companyId);
+
   const canSave = name.trim().length > 0 && Boolean(companyId);
+
+  const changeCompany = (nextCompanyId: string) => {
+    setCompanyId(nextCompanyId);
+    setDepartmentId((current) =>
+      data?.departments.some(
+        (department) => department.id === current && department.companyId === nextCompanyId,
+      )
+        ? current
+        : '',
+    );
+    setRoleId((current) =>
+      data?.roles.some((item) => item.id === current && item.companyId === nextCompanyId)
+        ? current
+        : '',
+    );
+  };
 
   const submit = async () => {
     setTouched(true);
@@ -52,6 +79,9 @@ export function EmployeeModal({ open, onClose, employee, defaultCompanyId }: Emp
       companyId,
       status,
       startDate: startDate || null,
+      departmentId: departmentId || null,
+      roleId: roleId || null,
+      notes: notes.trim(),
     };
     const success = employee
       ? await actions.updateEmployee({ id: employee.id, ...payload })
@@ -78,9 +108,9 @@ export function EmployeeModal({ open, onClose, employee, defaultCompanyId }: Emp
     <Modal
       open={open}
       title={employee ? t('Çalışanı düzenle') : t('Yeni çalışan')}
-      subtitle={t('Ekip üyesini şirketine bağla; rol ve durum bilgisini güncel tut.')}
+      subtitle={t('Ekip üyesini şirketine bağla; pozisyon, departman ve yetki rolünü güncel tut.')}
       onClose={onClose}
-      size="sm"
+      size="md"
       icon={<Users size={17} />}
       footer={
         <div className="footer-split">
@@ -123,7 +153,7 @@ export function EmployeeModal({ open, onClose, employee, defaultCompanyId }: Emp
             {touched && !name.trim() ? <span className="form-error">{t('Ad soyad gerekli.')}</span> : null}
           </label>
           <label className="form-field">
-            <span className="form-label">{t('Rol')} <span className="form-optional">{t('isteğe bağlı')}</span></span>
+            <span className="form-label">{t('Pozisyon')} <span className="form-optional">{t('isteğe bağlı')}</span></span>
             <input
               className="input"
               value={role}
@@ -140,11 +170,44 @@ export function EmployeeModal({ open, onClose, employee, defaultCompanyId }: Emp
             <select
               className="input select"
               value={companyId}
-              onChange={(event) => setCompanyId(event.target.value)}
+              onChange={(event) => changeCompany(event.target.value)}
             >
               {data?.companies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="form-field">
+            <span className="form-label">{t('Departman')} <span className="form-optional">{t('isteğe bağlı')}</span></span>
+            <select
+              className="input select"
+              value={departmentId}
+              onChange={(event) => setDepartmentId(event.target.value)}
+            >
+              <option value="">{t('Seçilmedi')}</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="form-row">
+          <label className="form-field">
+            <span className="form-label">{t('Yetki rolü')} <span className="form-optional">{t('isteğe bağlı')}</span></span>
+            <select
+              className="input select"
+              value={roleId}
+              onChange={(event) => setRoleId(event.target.value)}
+            >
+              <option value="">{t('Seçilmedi')}</option>
+              {roles.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
                 </option>
               ))}
             </select>
@@ -189,6 +252,18 @@ export function EmployeeModal({ open, onClose, employee, defaultCompanyId }: Emp
             ))}
           </div>
         </div>
+
+        <label className="form-field">
+          <span className="form-label">{t('Hakkında')} <span className="form-optional">{t('isteğe bağlı')}</span></span>
+          <textarea
+            className="input textarea"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            placeholder={t('Kısa bir profil notu…')}
+            maxLength={600}
+            rows={3}
+          />
+        </label>
       </form>
     </Modal>
   );

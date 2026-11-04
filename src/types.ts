@@ -232,6 +232,16 @@ export interface Task {
 
 export type EmployeeStatus = 'active' | 'on_leave' | 'inactive';
 
+export type PermissionKey =
+  | 'companies'
+  | 'services'
+  | 'finance'
+  | 'projects'
+  | 'team'
+  | 'approvals'
+  | 'tasks'
+  | 'settings';
+
 export interface Employee {
   id: string;
   companyId: string;
@@ -240,6 +250,42 @@ export interface Employee {
   email: string;
   status: EmployeeStatus;
   startDate: string | null;
+  departmentId: string | null;
+  roleId: string | null;
+  notes: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Department {
+  id: string;
+  companyId: string;
+  name: string;
+  description: string;
+  color: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Role {
+  id: string;
+  companyId: string;
+  name: string;
+  description: string;
+  permissions: PermissionKey[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PerformanceReview {
+  id: string;
+  employeeId: string;
+  companyId: string;
+  period: string;
+  score: number;
+  reviewer: string;
+  strengths: string;
+  improvements: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -591,6 +637,9 @@ export interface AppData {
   employees: Employee[];
   projects: Project[];
   approvals: Approval[];
+  departments: Department[];
+  roles: Role[];
+  performanceReviews: PerformanceReview[];
   connections: Connection[];
   playlist: PlaylistTrack[];
   settings: Settings;
@@ -685,6 +734,9 @@ export interface CreateEmployeeInput {
   email?: string;
   status?: EmployeeStatus;
   startDate?: string | null;
+  departmentId?: string | null;
+  roleId?: string | null;
+  notes?: string;
 }
 
 export interface UpdateEmployeeInput {
@@ -695,6 +747,57 @@ export interface UpdateEmployeeInput {
   email?: string;
   status?: EmployeeStatus;
   startDate?: string | null;
+  departmentId?: string | null;
+  roleId?: string | null;
+  notes?: string;
+}
+
+export interface CreateDepartmentInput {
+  companyId: string;
+  name: string;
+  description?: string;
+  color?: string;
+}
+
+export interface UpdateDepartmentInput {
+  id: string;
+  companyId?: string;
+  name?: string;
+  description?: string;
+  color?: string;
+}
+
+export interface CreateRoleInput {
+  companyId: string;
+  name: string;
+  description?: string;
+  permissions?: PermissionKey[];
+}
+
+export interface UpdateRoleInput {
+  id: string;
+  companyId?: string;
+  name?: string;
+  description?: string;
+  permissions?: PermissionKey[];
+}
+
+export interface CreatePerformanceReviewInput {
+  employeeId: string;
+  period: string;
+  score: number;
+  reviewer?: string;
+  strengths?: string;
+  improvements?: string;
+}
+
+export interface UpdatePerformanceReviewInput {
+  id: string;
+  period?: string;
+  score?: number;
+  reviewer?: string;
+  strengths?: string;
+  improvements?: string;
 }
 
 export interface CreateProjectInput {
@@ -811,6 +914,21 @@ export interface EzwinApi {
   employee: {
     create: (input: CreateEmployeeInput) => Promise<AppData>;
     update: (input: UpdateEmployeeInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  department: {
+    create: (input: CreateDepartmentInput) => Promise<AppData>;
+    update: (input: UpdateDepartmentInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  role: {
+    create: (input: CreateRoleInput) => Promise<AppData>;
+    update: (input: UpdateRoleInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  performanceReview: {
+    create: (input: CreatePerformanceReviewInput) => Promise<AppData>;
+    update: (input: UpdatePerformanceReviewInput) => Promise<AppData>;
     remove: (id: string) => Promise<AppData>;
   };
   project: {

@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Server,
   ShieldCheck,
+  Star,
   UserPlus,
   Users,
   Wallet,
@@ -94,6 +95,12 @@ function activityIcon(kind: ActivityKind) {
       return FolderKanban;
     case 'employee':
       return Users;
+    case 'department':
+      return Building2;
+    case 'role':
+      return ShieldCheck;
+    case 'review':
+      return Star;
     case 'approval':
       return ShieldCheck;
     case 'approval_approved':

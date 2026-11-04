@@ -11,6 +11,7 @@ import type {
   Company,
   CompanyCategory,
   CompanyStatus,
+  Department,
   Employee,
   EmployeeStatus,
   FinanceEntry,
@@ -20,9 +21,12 @@ import type {
   LinkItem,
   Meta,
   Note,
+  PerformanceReview,
+  PermissionKey,
   Project,
   ProjectStatus,
   RatesPayload,
+  Role,
   ServiceStatus,
   Settings,
   Task,
@@ -33,7 +37,7 @@ const SAVED_AT_KEY = 'ezwin.hub.web.savedAt.v1';
 const RATES_KEY = 'ezwin.hub.web.rates.v1';
 const RATES_URL = 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,EUR';
 const RATES_MAX_AGE = 15 * 60 * 1000;
-const WEB_VERSION = '2.3.0';
+const WEB_VERSION = '2.4.0';
 
 const COMPANY_STATUSES: CompanyStatus[] = ['active', 'maintenance', 'paused'];
 const COMPANY_CATEGORIES: CompanyCategory[] = [
@@ -57,6 +61,26 @@ const START_PAGES = [
 ] as const;
 const EMPLOYEE_STATUSES: EmployeeStatus[] = ['active', 'on_leave', 'inactive'];
 const PROJECT_STATUSES: ProjectStatus[] = ['active', 'paused', 'completed'];
+const PERMISSION_KEYS: PermissionKey[] = [
+  'companies',
+  'services',
+  'finance',
+  'projects',
+  'team',
+  'approvals',
+  'tasks',
+  'settings',
+];
+const DEPARTMENT_COLORS = [
+  '#3ef2b5',
+  '#5fc6ff',
+  '#b98bff',
+  '#ffc857',
+  '#ff7b72',
+  '#a8ff60',
+  '#ff8fd8',
+  '#9fe8d9',
+];
 
 type StatusListener = (statuses: Record<string, ServiceStatus>) => void;
 const statusListeners = new Set<StatusListener>();
@@ -319,6 +343,78 @@ function normalizeEmployee(raw: unknown, companyIds: Set<string>): Employee | nu
       ? (raw.status as EmployeeStatus)
       : 'active',
     startDate: /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null,
+    departmentId: asString(raw.departmentId) || null,
+    roleId: asString(raw.roleId) || null,
+    notes: asString(raw.notes),
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeDepartment(raw: unknown, companyIds: Set<string>): Department | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const name = asString(raw.name);
+  if (!name) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const color = asString(raw.color);
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    name,
+    description: asString(raw.description),
+    color: /^#[0-9a-f]{6}$/i.test(color) ? color : DEPARTMENT_COLORS[0],
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeRole(raw: unknown, companyIds: Set<string>): Role | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const name = asString(raw.name);
+  if (!name) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const permissions = Array.from(
+    new Set(
+      asArray(raw.permissions).filter((permission): permission is PermissionKey =>
+        PERMISSION_KEYS.includes(permission as PermissionKey),
+      ),
+    ),
+  );
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    name,
+    description: asString(raw.description),
+    permissions,
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizePerformanceReview(
+  raw: unknown,
+  employeesById: Map<string, Employee>,
+): PerformanceReview | null {
+  if (!isRecord(raw)) return null;
+  const employee = employeesById.get(asString(raw.employeeId));
+  if (!employee) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const score = Math.round(asNumber(raw.score, 0));
+  if (score < 0 || score > 100) return null;
+  const period = asString(raw.period);
+  return {
+    id: asString(raw.id) || uid(),
+    employeeId: employee.id,
+    companyId: employee.companyId,
+    period: /^\d{4}-\d{2}$/.test(period) ? period : new Date(createdAt).toISOString().slice(0, 7),
+    score,
+    reviewer: asString(raw.reviewer),
+    strengths: asString(raw.strengths),
+    improvements: asString(raw.improvements),
     createdAt,
     updatedAt: asNumber(raw.updatedAt, createdAt),
   };
@@ -427,6 +523,9 @@ function emptyState(): AppData {
     employees: [],
     projects: [],
     approvals: [],
+    departments: [],
+    roles: [],
+    performanceReviews: [],
     connections: [],
     playlist: [],
     settings: { ...DEFAULT_SETTINGS },
@@ -541,6 +640,29 @@ export function normalizeState(raw: unknown): AppData {
     .map((asset, index) => normalizeAsset(asset, index, companyIds))
     .filter((asset): asset is Asset => Boolean(asset));
   const assetIds = new Set(assets.map((asset) => asset.id));
+  const employees = asArray(source.employees)
+    .map((employee) => normalizeEmployee(employee, companyIds))
+    .filter((employee): employee is Employee => Boolean(employee));
+  const departments = asArray(source.departments)
+    .map((department) => normalizeDepartment(department, companyIds))
+    .filter((department): department is Department => Boolean(department));
+  const roles = asArray(source.roles)
+    .map((role) => normalizeRole(role, companyIds))
+    .filter((role): role is Role => Boolean(role));
+  const departmentById = new Map(departments.map((department) => [department.id, department]));
+  const roleById = new Map(roles.map((role) => [role.id, role]));
+  for (const employee of employees) {
+    if (
+      employee.departmentId &&
+      departmentById.get(employee.departmentId)?.companyId !== employee.companyId
+    ) {
+      employee.departmentId = null;
+    }
+    if (employee.roleId && roleById.get(employee.roleId)?.companyId !== employee.companyId) {
+      employee.roleId = null;
+    }
+  }
+  const employeesById = new Map(employees.map((employee) => [employee.id, employee]));
 
   return {
     version: 1,
@@ -560,15 +682,18 @@ export function normalizeState(raw: unknown): AppData {
     finance: asArray(source.finance)
       .map((entry) => normalizeFinance(entry, companyIds))
       .filter((entry): entry is FinanceEntry => Boolean(entry)),
-    employees: asArray(source.employees)
-      .map((employee) => normalizeEmployee(employee, companyIds))
-      .filter((employee): employee is Employee => Boolean(employee)),
+    employees,
     projects: asArray(source.projects)
       .map((project) => normalizeProject(project, companyIds))
       .filter((project): project is Project => Boolean(project)),
     approvals: asArray(source.approvals)
       .map((approval) => normalizeApproval(approval, companyIds))
       .filter((approval): approval is Approval => Boolean(approval)),
+    departments,
+    roles,
+    performanceReviews: asArray(source.performanceReviews)
+      .map((review) => normalizePerformanceReview(review, employeesById))
+      .filter((review): review is PerformanceReview => Boolean(review)),
     connections: [],
     playlist: [],
     settings: normalizeSettings(source.settings),
@@ -754,6 +879,9 @@ export function importBackup(text: string): {
     'employees',
     'projects',
     'approvals',
+    'departments',
+    'roles',
+    'performanceReviews',
     'settings',
   ].some((key) => key in source);
   if (!known) throw new Error('Yedek dosyası geçersiz.');
@@ -974,6 +1102,11 @@ export function installBrowserApi(): void {
         state.employees = state.employees.filter((employee) => employee.companyId !== id);
         state.projects = state.projects.filter((project) => project.companyId !== id);
         state.approvals = state.approvals.filter((approval) => approval.companyId !== id);
+        state.departments = state.departments.filter((department) => department.companyId !== id);
+        state.roles = state.roles.filter((role) => role.companyId !== id);
+        state.performanceReviews = state.performanceReviews.filter(
+          (review) => review.companyId !== id,
+        );
         for (const assetId of assetIds) delete state.statuses[assetId];
         return writeState(state);
       },
@@ -1168,6 +1301,22 @@ export function installBrowserApi(): void {
         findCompany(state, input.companyId);
         const name = asString(input.name);
         if (!name) throw new Error('Çalışan adı gerekli.');
+        const departmentId = asString(input.departmentId);
+        if (
+          departmentId &&
+          !state.departments.some(
+            (department) => department.id === departmentId && department.companyId === input.companyId,
+          )
+        ) {
+          throw new Error('Departman bulunamadı.');
+        }
+        const roleId = asString(input.roleId);
+        if (
+          roleId &&
+          !state.roles.some((role) => role.id === roleId && role.companyId === input.companyId)
+        ) {
+          throw new Error('Yetki rolü bulunamadı.');
+        }
         const now = Date.now();
         const startDate = asString(input.startDate);
         state.employees.push({
@@ -1180,6 +1329,9 @@ export function installBrowserApi(): void {
             ? (input.status as EmployeeStatus)
             : 'active',
           startDate: /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null,
+          departmentId: departmentId || null,
+          roleId: roleId || null,
+          notes: asString(input.notes),
           createdAt: now,
           updatedAt: now,
         });
@@ -1189,9 +1341,11 @@ export function installBrowserApi(): void {
         const state = readState();
         const employee = state.employees.find((item) => item.id === input.id);
         if (!employee) throw new Error('Çalışan bulunamadı.');
-        if (input.companyId !== undefined) {
+        if (input.companyId !== undefined && input.companyId !== employee.companyId) {
           findCompany(state, input.companyId);
           employee.companyId = input.companyId;
+          if (input.departmentId === undefined) employee.departmentId = null;
+          if (input.roleId === undefined) employee.roleId = null;
         }
         if (input.name !== undefined) {
           const name = asString(input.name);
@@ -1207,6 +1361,32 @@ export function installBrowserApi(): void {
           const startDate = asString(input.startDate);
           employee.startDate = /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null;
         }
+        if (input.departmentId !== undefined) {
+          const departmentId = asString(input.departmentId);
+          if (
+            departmentId &&
+            !state.departments.some(
+              (department) =>
+                department.id === departmentId && department.companyId === employee.companyId,
+            )
+          ) {
+            throw new Error('Departman bulunamadı.');
+          }
+          employee.departmentId = departmentId || null;
+        }
+        if (input.roleId !== undefined) {
+          const roleId = asString(input.roleId);
+          if (
+            roleId &&
+            !state.roles.some(
+              (role) => role.id === roleId && role.companyId === employee.companyId,
+            )
+          ) {
+            throw new Error('Yetki rolü bulunamadı.');
+          }
+          employee.roleId = roleId || null;
+        }
+        if (input.notes !== undefined) employee.notes = asString(input.notes);
         employee.updatedAt = Date.now();
         return writeState(state);
       },
@@ -1216,6 +1396,185 @@ export function installBrowserApi(): void {
           throw new Error('Çalışan bulunamadı.');
         }
         state.employees = state.employees.filter((employee) => employee.id !== id);
+        state.performanceReviews = state.performanceReviews.filter(
+          (review) => review.employeeId !== id,
+        );
+        return writeState(state);
+      },
+    },
+    department: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const name = asString(input.name);
+        if (!name) throw new Error('Departman adı gerekli.');
+        const now = Date.now();
+        const color = asString(input.color);
+        state.departments.push({
+          id: uid(),
+          companyId: input.companyId,
+          name,
+          description: asString(input.description),
+          color: /^#[0-9a-f]{6}$/i.test(color)
+            ? color
+            : DEPARTMENT_COLORS[state.departments.length % DEPARTMENT_COLORS.length],
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const department = state.departments.find((item) => item.id === input.id);
+        if (!department) throw new Error('Departman bulunamadı.');
+        if (input.companyId !== undefined && input.companyId !== department.companyId) {
+          findCompany(state, input.companyId);
+          for (const employee of state.employees) {
+            if (employee.departmentId === department.id) employee.departmentId = null;
+          }
+          department.companyId = input.companyId;
+        }
+        if (input.name !== undefined) {
+          const name = asString(input.name);
+          if (!name) throw new Error('Departman adı gerekli.');
+          department.name = name;
+        }
+        if (input.description !== undefined) department.description = asString(input.description);
+        if (input.color !== undefined) {
+          const color = asString(input.color);
+          if (/^#[0-9a-f]{6}$/i.test(color)) department.color = color;
+        }
+        department.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.departments.some((department) => department.id === id)) {
+          throw new Error('Departman bulunamadı.');
+        }
+        state.departments = state.departments.filter((department) => department.id !== id);
+        for (const employee of state.employees) {
+          if (employee.departmentId === id) employee.departmentId = null;
+        }
+        return writeState(state);
+      },
+    },
+    role: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const name = asString(input.name);
+        if (!name) throw new Error('Rol adı gerekli.');
+        const now = Date.now();
+        const permissions = Array.from(
+          new Set(
+            asArray(input.permissions).filter((permission): permission is PermissionKey =>
+              PERMISSION_KEYS.includes(permission as PermissionKey),
+            ),
+          ),
+        );
+        state.roles.push({
+          id: uid(),
+          companyId: input.companyId,
+          name,
+          description: asString(input.description),
+          permissions,
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const role = state.roles.find((item) => item.id === input.id);
+        if (!role) throw new Error('Rol bulunamadı.');
+        if (input.companyId !== undefined && input.companyId !== role.companyId) {
+          findCompany(state, input.companyId);
+          for (const employee of state.employees) {
+            if (employee.roleId === role.id) employee.roleId = null;
+          }
+          role.companyId = input.companyId;
+        }
+        if (input.name !== undefined) {
+          const name = asString(input.name);
+          if (!name) throw new Error('Rol adı gerekli.');
+          role.name = name;
+        }
+        if (input.description !== undefined) role.description = asString(input.description);
+        if (input.permissions !== undefined) {
+          role.permissions = Array.from(
+            new Set(
+              asArray(input.permissions).filter((permission): permission is PermissionKey =>
+                PERMISSION_KEYS.includes(permission as PermissionKey),
+              ),
+            ),
+          );
+        }
+        role.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.roles.some((role) => role.id === id)) {
+          throw new Error('Rol bulunamadı.');
+        }
+        state.roles = state.roles.filter((role) => role.id !== id);
+        for (const employee of state.employees) {
+          if (employee.roleId === id) employee.roleId = null;
+        }
+        return writeState(state);
+      },
+    },
+    performanceReview: {
+      create: async (input) => {
+        const state = readState();
+        const employee = state.employees.find((item) => item.id === input.employeeId);
+        if (!employee) throw new Error('Çalışan bulunamadı.');
+        const period = asString(input.period);
+        if (!/^\d{4}-\d{2}$/.test(period)) throw new Error('Dönem gerekli.');
+        const score = Math.round(asNumber(input.score, -1));
+        if (score < 0 || score > 100) throw new Error('Puan 0 ile 100 arasında olmalı.');
+        const now = Date.now();
+        state.performanceReviews.push({
+          id: uid(),
+          employeeId: employee.id,
+          companyId: employee.companyId,
+          period,
+          score,
+          reviewer: asString(input.reviewer),
+          strengths: asString(input.strengths),
+          improvements: asString(input.improvements),
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const review = state.performanceReviews.find((item) => item.id === input.id);
+        if (!review) throw new Error('Değerlendirme bulunamadı.');
+        if (input.period !== undefined) {
+          const period = asString(input.period);
+          if (!/^\d{4}-\d{2}$/.test(period)) throw new Error('Dönem gerekli.');
+          review.period = period;
+        }
+        if (input.score !== undefined) {
+          const score = Math.round(asNumber(input.score, -1));
+          if (score < 0 || score > 100) throw new Error('Puan 0 ile 100 arasında olmalı.');
+          review.score = score;
+        }
+        if (input.reviewer !== undefined) review.reviewer = asString(input.reviewer);
+        if (input.strengths !== undefined) review.strengths = asString(input.strengths);
+        if (input.improvements !== undefined) review.improvements = asString(input.improvements);
+        review.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.performanceReviews.some((review) => review.id === id)) {
+          throw new Error('Değerlendirme bulunamadı.');
+        }
+        state.performanceReviews = state.performanceReviews.filter((review) => review.id !== id);
         return writeState(state);
       },
     },

@@ -329,7 +329,10 @@ function localIsEmpty(state: AppData): boolean {
     state.youtubeChannels.length === 0 &&
     state.employees.length === 0 &&
     state.projects.length === 0 &&
-    state.approvals.length === 0
+    state.approvals.length === 0 &&
+    state.departments.length === 0 &&
+    state.roles.length === 0 &&
+    state.performanceReviews.length === 0
   );
 }
 
