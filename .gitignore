@@ -11,3 +11,7 @@ release-artifacts/
 build-output/
 
 *.tsbuildinfo
+__pycache__/
+*.pyc
+.env
+.env.*

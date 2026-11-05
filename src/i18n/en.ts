@@ -1047,6 +1047,30 @@ export const en = {
   "Oturum başlatılamadı. Tarayıcı depolamasını kontrol et.": "The session could not be started. Check browser storage.",
   "Giriş yapılamadı.": "Sign-in failed.",
   "Hesap oluşturulamadı.": "Account could not be created.",
+  "Şirketler, servisler, finans, görevler ve notlar; hepsi bu tarayıcıda. Hesabınla aç, kaldığın yerden devam et.":
+    "Companies, services, finance, tasks and notes; all in this browser. Open with your account and pick up where you left off.",
+  "Şifren sunucuda yalnızca geri döndürülemez özet olarak saklanır; çalışma alanın bu cihazda kalır.":
+    "Your password is stored on the server only as an irreversible digest; your workspace stays on this device.",
+  "Şifren sunucuda yalnızca geri döndürülemez özet olarak saklanır. Çalışma alanı verileri bu cihazda kalır.":
+    "Your password is stored on the server only as an irreversible digest. Workspace data stays on this device.",
+  "Hesap · çalışma alanı bu cihazda kalır": "Account · workspace stays on this device",
+  "Bulut hesabı": "Cloud account",
+  "Bulut hesabı, veri ve gizlilik.": "Cloud account, data and privacy.",
+  "İlk hesabını oluşturuyorsun.": "You are creating your first account.",
+  "Devam etmek için hesabınla giriş yap.": "Sign in with your account to continue.",
+  "Bu tarayıcıda kayıtlı hesap yok.": "No saved account in this browser.",
+  "Masaüstü hesabınla veya yeni bir hesapla giriş yapabilirsin.":
+    "Sign in with your desktop account or create a new one.",
+  "Bu cihazdaki girişi sıfırla": "Reset sign-in on this device",
+  "Bu işlem yalnızca bu cihazdaki giriş kaydını siler. Sunucu hesabı ve çalışma alanı verileri korunur.":
+    "This only removes the sign-in record on this device. The server account and workspace data are preserved.",
+  "Bu hesapta iki adımlı doğrulama açık. Şimdilik masaüstü uygulamasından giriş yap.":
+    "Two-step verification is enabled on this account. For now, sign in from the desktop app.",
+  "Çok fazla hatalı deneme. {minutes} dakika sonra tekrar dene.":
+    "Too many failed attempts. Try again in {minutes} minutes.",
+  "Bilgileri kontrol et.": "Check your details.",
+  "Sunucuya ulaşılamadı. Yerel hesabınla devam edebilirsin.":
+    "Could not reach the server. You can continue with your local account.",
   "Otomatik kayıt": "Auto-save",
   "Kaydedilemedi": "Could not save",
   "Değişiklikler bu cihaza otomatik kaydedilir.": "Changes are saved to this device automatically.",

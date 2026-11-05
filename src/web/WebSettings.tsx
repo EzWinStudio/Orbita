@@ -45,7 +45,7 @@ export function WebSettings() {
   const data = useAppData();
   const { meta, actions, toast, confirm } = useApp();
   const { t, language, languages, setLanguage } = useI18n();
-  const { account, session, isGuest, signOut, createAccount, updateAvatar } = useWebAuth();
+  const { account, session, isGuest, cloud, signOut, createAccount, updateAvatar } = useWebAuth();
   const [busy, setBusy] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -433,7 +433,7 @@ export function WebSettings() {
           <div className="card-header">
             <div>
               <h2>{t('Güvenlik')}</h2>
-              <p>{t('Yerel hesap, veri ve gizlilik.')}</p>
+              <p>{cloud ? t('Bulut hesabı, veri ve gizlilik.') : t('Yerel hesap, veri ve gizlilik.')}</p>
             </div>
             <span className="card-icon"><ShieldCheck size={17} /></span>
           </div>
@@ -454,7 +454,9 @@ export function WebSettings() {
                 {t('Hesap oluştur')}
               </button>
             ) : (
-              <span className="web-platform-badge">{t('Yerel hesap')}</span>
+              <span className="web-platform-badge">
+                {cloud ? t('Bulut hesabı') : t('Yerel hesap')}
+              </span>
             )}
           </div>
 
@@ -462,7 +464,7 @@ export function WebSettings() {
             {t('Birden fazla hesap ekleyebilir, giriş ekranından hesap seçebilirsin.')}
           </p>
 
-          {!isGuest ? (
+          {!isGuest && !cloud ? (
             <div className="setting-row">
               <div className="setting-text">
                 <strong>{t('Hesap dosyası')}</strong>
@@ -557,9 +559,13 @@ export function WebSettings() {
             {t('Veriler bu cihazda saklanır; eşitleme açıksa yalnızca şifreli kopya gönderilir.')}
           </p>
           <p className="setting-note">
-            {t(
-              'Bu giriş yerel bir kilittir; çalışma alanı verilerini şifrelemez. Şifren düz metin olarak saklanmaz.',
-            )}
+            {cloud
+              ? t(
+                  'Şifren sunucuda yalnızca geri döndürülemez özet olarak saklanır. Çalışma alanı verileri bu cihazda kalır.',
+                )
+              : t(
+                  'Bu giriş yerel bir kilittir; çalışma alanı verilerini şifrelemez. Şifren düz metin olarak saklanmaz.',
+                )}
           </p>
 
           <div className="web-danger-zone web-danger-actions">

@@ -29,6 +29,7 @@ import {
   EMAIL_MAX_LENGTH,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  getLastCloudEmail,
   getLocalAccounts,
   importAccountBundle,
   loginLocalAccount,
@@ -37,6 +38,12 @@ import {
   type AuthSession,
   type LocalAccount,
 } from './webAuth';
+import {
+  CloudAuthError,
+  CloudUnavailableError,
+  loginCloudAccount,
+  registerCloudAccount,
+} from './cloudAuth';
 
 const STRENGTH_LABELS = ['Zayıf', 'Orta', 'İyi', 'Güçlü'] as const;
 
@@ -55,7 +62,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
   const isRegister = mode === 'register';
   const [accounts, setAccounts] = useState<LocalAccount[]>(() => getLocalAccounts());
   const [name, setName] = useState('');
-  const [email, setEmail] = useState(account?.email ?? '');
+  const [email, setEmail] = useState(account?.email ?? getLastCloudEmail() ?? '');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -88,6 +95,25 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
   const strength = passwordStrength(password);
   const strengthLabel = strength > 0 ? t(STRENGTH_LABELS[strength - 1]) : t('Zayıf');
 
+  function cloudErrorText(error: CloudAuthError): string {
+    switch (error.code) {
+      case 'two_factor_unsupported':
+        return t('Bu hesapta iki adımlı doğrulama açık. Şimdilik masaüstü uygulamasından giriş yap.');
+      case 'locked':
+        return t('Çok fazla hatalı deneme. {minutes} dakika sonra tekrar dene.', {
+          minutes: Math.max(1, Math.ceil(error.retryAfter / 60)),
+        });
+      case 'email_exists':
+        return t('Bu e-posta ile kayıtlı bir hesap var. Giriş yapabilirsin.');
+      case 'invalid_credentials':
+        return t('E-posta veya şifre hatalı.');
+      case 'invalid_input':
+        return t('Bilgileri kontrol et.');
+      default:
+        return t('Giriş yapılamadı.');
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -114,28 +140,69 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
     setNotice(null);
     try {
       if (isRegister) {
-        const result = await registerLocalAccount({
-          name: nameValue,
-          email: emailValue,
-          password,
-          remember,
-        });
-        onAuthed(result);
+        try {
+          const result = await registerCloudAccount({
+            name: nameValue,
+            email: emailValue,
+            password,
+            remember,
+          });
+          onAuthed(result);
+        } catch (err) {
+          if (!(err instanceof CloudUnavailableError)) throw err;
+          const result = await registerLocalAccount({
+            name: nameValue,
+            email: emailValue,
+            password,
+            remember,
+          });
+          onAuthed(result);
+        }
       } else {
-        const result = await loginLocalAccount({
-          email: emailValue,
-          password,
-          remember,
-        });
-        onAuthed(result);
+        try {
+          const result = await loginCloudAccount({
+            email: emailValue,
+            password,
+            remember,
+          });
+          onAuthed(result);
+        } catch (err) {
+          if (err instanceof CloudUnavailableError) {
+            try {
+              const result = await loginLocalAccount({
+                email: emailValue,
+                password,
+                remember,
+              });
+              onAuthed(result);
+            } catch {
+              throw new Error(t('Sunucuya ulaşılamadı. Yerel hesabınla devam edebilirsin.'));
+            }
+          } else if (err instanceof CloudAuthError && err.code === 'invalid_credentials') {
+            try {
+              const result = await loginLocalAccount({
+                email: emailValue,
+                password,
+                remember,
+              });
+              onAuthed(result);
+            } catch {
+              throw err;
+            }
+          } else {
+            throw err;
+          }
+        }
       }
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : isRegister
-            ? 'Hesap oluşturulamadı.'
-            : 'Giriş yapılamadı.',
+        err instanceof CloudAuthError
+          ? cloudErrorText(err)
+          : err instanceof Error
+            ? err.message
+            : isRegister
+              ? 'Hesap oluşturulamadı.'
+              : 'Giriş yapılamadı.',
       );
       setBusy(false);
     }
@@ -265,14 +332,16 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                   'Şirketler, servisler, finans, görevler ve notlar; hepsi bu uygulamada. Yerel hesabınla aç, kaldığın yerden devam et.',
                 )
               : t(
-                  'Şirketler, servisler, finans, görevler ve notlar; hepsi bu tarayıcıda. Yerel hesabınla aç, kaldığın yerden devam et.',
+                  'Şirketler, servisler, finans, görevler ve notlar; hepsi bu tarayıcıda. Hesabınla aç, kaldığın yerden devam et.',
                 )}
           </p>
           <ul className="auth-features">
             <li>
               <ShieldCheck size={16} />
               <span>
-                {t('Hesap bu cihazda kalır; eşitleme açıksa yalnızca şifreli kopya gönderilir.')}
+                {t(
+                  'Şifren sunucuda yalnızca geri döndürülemez özet olarak saklanır; çalışma alanın bu cihazda kalır.',
+                )}
               </span>
             </li>
             <li>
@@ -313,7 +382,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                   {isRegister
                     ? accounts.length > 0
                       ? t('Yeni hesap ekle')
-                      : t('Yerel hesap oluştur')
+                      : t('Hesap oluştur')
                     : accounts.length > 0
                       ? t('Tekrar hoş geldin')
                       : t('Giriş yap')}
@@ -322,13 +391,13 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                   {isRegister
                     ? accounts.length > 0
                       ? t('Bu cihaza yeni bir hesap ekle.')
-                      : t('Bu cihazda ilk hesabı oluşturuyorsun.')
-                    : t('Devam etmek için yerel hesabınla giriş yap.')}
+                      : t('İlk hesabını oluşturuyorsun.')
+                    : t('Devam etmek için hesabınla giriş yap.')}
                 </p>
               </div>
             </div>
 
-            <div className="auth-mode-tabs" role="tablist" aria-label={t('Yerel hesap')}>
+            <div className="auth-mode-tabs" role="tablist" aria-label={t('Hesap')}>
               <button
                 type="button"
                 role="tab"
@@ -389,9 +458,9 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                   <LogIn size={16} />
                 </span>
                 <div>
-                  <strong>{t('Bu cihazda henüz hesap yok.')}</strong>
+                  <strong>{t('Bu tarayıcıda kayıtlı hesap yok.')}</strong>
                   <p>
-                    {t('Başka bir cihazdaki hesabı içe aktar veya yeni bir hesap oluştur.')}
+                    {t('Masaüstü hesabınla veya yeni bir hesapla giriş yapabilirsin.')}
                   </p>
                 </div>
               </div>
@@ -402,7 +471,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                 <span className="auth-reset-icon">
                   <AlertTriangle size={18} />
                 </span>
-                <h3>{t('Giriş kilidini sıfırla')}</h3>
+                <h3>{t('Bu cihazdaki girişi sıfırla')}</h3>
                 {email ? (
                   <strong className="auth-reset-target" dir="ltr">
                     {email}
@@ -410,7 +479,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                 ) : null}
                 <p>
                   {t(
-                    'Bu cihazda e-posta veya sunucu yok; şifre kurtarma yapılamaz. Sıfırlarsan yalnızca bu hesabın giriş kaydı bu cihazdan silinir. Çalışma alanı verileri korunur.',
+                    'Bu işlem yalnızca bu cihazdaki giriş kaydını siler. Sunucu hesabı ve çalışma alanı verileri korunur.',
                   )}
                 </p>
                 {errorBox}
@@ -631,7 +700,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                     setPassword('');
                   }}
                 >
-                  {t('Şifremi unuttum')}
+                  {t('Bu cihazdaki girişi sıfırla')}
                 </button>
               </div>
             ) : null}
@@ -649,7 +718,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
 
           <p className="auth-footnote">
             <KeyRound size={13} />
-            <span>{t('Yerel hesap · veriler bu cihazda kalır')}</span>
+            <span>{t('Hesap · çalışma alanı bu cihazda kalır')}</span>
           </p>
         </section>
       </main>

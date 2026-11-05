@@ -15,7 +15,9 @@ import { setWorkspaceScope } from './workspaceScope';
 import { WebAuthScreen } from './WebAuthScreen';
 import {
   ACCOUNTS_STORAGE_KEY,
+  CLOUD_SESSION_KEY,
   SESSION_STORAGE_KEY,
+  clearCloudSession,
   clearGuestSession,
   getActiveSession,
   getLocalAccount,
@@ -24,17 +26,24 @@ import {
   readGuestAvatar,
   resetLocalAccount,
   startGuestSession,
+  updateCloudSessionAvatar,
   updateLocalAccountAvatar,
   writeGuestAvatar,
   type AuthSession,
   type LocalAccount,
   type LocalSession,
 } from './webAuth';
+import {
+  logoutCloudAccount,
+  updateCloudProfile,
+  validateCloudSession,
+} from './cloudAuth';
 
 interface WebAuthContextValue {
   account: LocalAccount;
   session: LocalSession;
   isGuest: boolean;
+  cloud: boolean;
   signOut: () => void;
   createAccount: () => void;
   updateAvatar: (avatar: string | null) => void;
@@ -44,7 +53,13 @@ const WebAuthContext = createContext<WebAuthContextValue | null>(null);
 
 type GateState =
   | { phase: 'auth'; account: LocalAccount | null }
-  | { phase: 'ready'; account: LocalAccount; session: LocalSession; guest: boolean };
+  | {
+      phase: 'ready';
+      account: LocalAccount;
+      session: LocalSession;
+      guest: boolean;
+      cloud: boolean;
+    };
 
 const LANGUAGE_STORAGE_KEY = 'ezwin.language';
 const GUEST_SESSION: LocalSession = { remember: false, expiresAt: 0 };
@@ -73,7 +88,13 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GateState>(() => {
     const active = getActiveSession();
     if (active) {
-      return { phase: 'ready', account: active.account, session: active.session, guest: false };
+      return {
+        phase: 'ready',
+        account: active.account,
+        session: active.session,
+        guest: false,
+        cloud: Boolean(active.cloud),
+      };
     }
     if (hasGuestSession()) {
       setWorkspaceScope('guest');
@@ -82,6 +103,7 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
         account: guestAccount(storedLanguage()),
         session: GUEST_SESSION,
         guest: true,
+        cloud: false,
       };
     }
     return { phase: 'auth', account: getLocalAccount() };
@@ -104,6 +126,12 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
       setState({ phase: 'auth', account: getLocalAccount() });
       return;
     }
+    if (getActiveSession()?.cloud) {
+      logoutCloudAccount();
+      clearCloudSession();
+      setState({ phase: 'auth', account: getLocalAccount() });
+      return;
+    }
     logoutLocalAccount();
     setState({ phase: 'auth', account: getLocalAccount() });
   }, []);
@@ -116,6 +144,7 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
       account: guestAccount(language),
       session: GUEST_SESSION,
       guest: true,
+      cloud: false,
     });
   }, [language]);
 
@@ -135,6 +164,15 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
       reportBrowserSave(true);
       return;
     }
+    if (getActiveSession()?.cloud) {
+      const next = updateCloudSessionAvatar(avatar);
+      setState((current) =>
+        current.phase === 'ready' ? { ...current, account: next } : current,
+      );
+      void updateCloudProfile(avatar);
+      reportBrowserSave(true);
+      return;
+    }
     const next = updateLocalAccountAvatar(avatar);
     setState((current) =>
       current.phase === 'ready' ? { ...current, account: next } : current,
@@ -146,7 +184,13 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
     (result: AuthSession) => {
       clearGuestSession();
       setStoredLanguage(language);
-      setState({ phase: 'ready', account: result.account, session: result.session, guest: false });
+      setState({
+        phase: 'ready',
+        account: result.account,
+        session: result.session,
+        guest: false,
+        cloud: Boolean(result.cloud),
+      });
     },
     [language],
   );
@@ -167,6 +211,31 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
       );
       return;
     }
+    if (active.cloud) {
+      void validateCloudSession()
+        .then((result) => {
+          if (result.status === 'invalid') {
+            clearCloudSession();
+            setState((current) =>
+              current.phase === 'auth'
+                ? current
+                : { phase: 'auth', account: getLocalAccount() },
+            );
+            return;
+          }
+          if (result.status === 'ok' && result.account) {
+            setState((current) =>
+              current.phase === 'ready'
+                ? { ...current, account: result.account as LocalAccount }
+                : current,
+            );
+          }
+        })
+        .catch(() => {
+          /* offline web sessions keep their cached account */
+        });
+      return;
+    }
     setState((current) => {
       if (current.phase === 'ready' && current.account.id === active.account.id) {
         if (current.account.avatar === active.account.avatar) return current;
@@ -175,9 +244,16 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
           account: active.account,
           session: active.session,
           guest: false,
+          cloud: false,
         };
       }
-      return { phase: 'ready', account: active.account, session: active.session, guest: false };
+      return {
+        phase: 'ready',
+        account: active.account,
+        session: active.session,
+        guest: false,
+        cloud: false,
+      };
     });
   }, []);
 
@@ -194,9 +270,22 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
     };
   }, [checkSession, state.phase]);
 
+  const cloudActive = state.phase === 'ready' && state.cloud;
+
+  useEffect(() => {
+    if (!cloudActive) return;
+    checkSession();
+  }, [checkSession, cloudActive]);
+
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== ACCOUNTS_STORAGE_KEY && event.key !== SESSION_STORAGE_KEY) return;
+      if (
+        event.key !== ACCOUNTS_STORAGE_KEY &&
+        event.key !== SESSION_STORAGE_KEY &&
+        event.key !== CLOUD_SESSION_KEY
+      ) {
+        return;
+      }
       checkSession();
     };
     window.addEventListener('storage', onStorage);
@@ -224,6 +313,7 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
         account: state.account,
         session: state.session,
         isGuest: state.guest,
+        cloud: state.cloud,
         signOut,
         createAccount,
         updateAvatar,

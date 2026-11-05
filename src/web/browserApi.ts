@@ -74,7 +74,7 @@ const SAVED_AT_KEY = 'ezwin.hub.web.savedAt.v1';
 const RATES_KEY = 'ezwin.hub.web.rates.v1';
 const RATES_URL = 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,EUR';
 const RATES_MAX_AGE = 15 * 60 * 1000;
-const WEB_VERSION = '2.6.1';
+const WEB_VERSION = '2.6.2';
 
 const COMPANY_STATUSES: CompanyStatus[] = ['active', 'maintenance', 'paused'];
 const COMPANY_CATEGORIES: CompanyCategory[] = [

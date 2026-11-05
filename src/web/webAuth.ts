@@ -8,6 +8,8 @@ import {
 export const AUTH_STORAGE_KEY = 'ezwin.hub.web.auth.v1';
 export const ACCOUNTS_STORAGE_KEY = 'ezwin.hub.web.accounts.v1';
 export const SESSION_STORAGE_KEY = 'ezwin.hub.web.session.v1';
+export const CLOUD_SESSION_KEY = 'ezwin.hub.web.cloud.v1';
+export const CLOUD_EMAIL_KEY = 'ezwin.hub.web.cloudEmail.v1';
 export const GUEST_STORAGE_KEY = 'ezwin.hub.web.guest.v1';
 export const GUEST_AVATAR_KEY = 'ezwin.hub.web.guestAvatar.v1';
 
@@ -43,6 +45,7 @@ export interface LocalSession {
 export interface AuthSession {
   account: LocalAccount;
   session: LocalSession;
+  cloud?: boolean;
 }
 
 export interface RegisterInput {
@@ -67,6 +70,13 @@ interface StoredAccount extends LocalAccount {
 interface StoredSession {
   version: 1;
   accountId: string;
+  expiresAt: number;
+  remember: boolean;
+}
+
+interface CloudSessionRecord {
+  version: 1;
+  account: LocalAccount;
   expiresAt: number;
   remember: boolean;
 }
@@ -220,6 +230,24 @@ function normalizeStoredAccount(raw: unknown): StoredAccount | null {
   };
 }
 
+function normalizePublicAccount(raw: unknown): LocalAccount | null {
+  if (!isRecord(raw)) return null;
+  const id = asString(raw.id);
+  const name = asString(raw.name).trim();
+  const email = asString(raw.email).trim();
+  if (!id || !name || !email) return null;
+  const color = asString(raw.color);
+  return {
+    id,
+    name,
+    email,
+    avatar: normalizeAvatar(raw.avatar),
+    color: /^#[0-9a-f]{3,8}$/i.test(color) ? color : '#3ef2b5',
+    createdAt: typeof raw.createdAt === 'number' ? raw.createdAt : Date.now(),
+    lastLoginAt: typeof raw.lastLoginAt === 'number' ? raw.lastLoginAt : null,
+  };
+}
+
 function normalizeAccountList(raw: unknown): StoredAccount[] {
   if (!isRecord(raw) || !Array.isArray(raw.accounts)) return [];
   const seen = new Set<string>();
@@ -349,6 +377,15 @@ export function hasLocalAccount(): boolean {
 }
 
 export function getActiveSession(): AuthSession | null {
+  const cloud = getCloudSession();
+  if (cloud) {
+    setWorkspaceScope(cloud.account.id);
+    return {
+      account: cloud.account,
+      session: { remember: cloud.remember, expiresAt: cloud.expiresAt },
+      cloud: true,
+    };
+  }
   const accounts = readAccounts();
   if (!accounts.length) {
     clearSessions();
@@ -440,6 +477,88 @@ export async function loginLocalAccount(input: LoginInput): Promise<AuthSession>
 
 export function logoutLocalAccount(): void {
   clearSessions();
+}
+
+export function getCloudSession(): CloudSessionRecord | null {
+  const raw = readStorage(localStorage, CLOUD_SESSION_KEY);
+  if (!raw) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    removeStorage(localStorage, CLOUD_SESSION_KEY);
+    return null;
+  }
+  if (!isRecord(parsed)) {
+    removeStorage(localStorage, CLOUD_SESSION_KEY);
+    return null;
+  }
+  const account = normalizePublicAccount(parsed.account);
+  const expiresAt = typeof parsed.expiresAt === 'number' ? parsed.expiresAt : 0;
+  if (!account || !expiresAt || expiresAt <= Date.now()) {
+    removeStorage(localStorage, CLOUD_SESSION_KEY);
+    return null;
+  }
+  return {
+    version: 1,
+    account,
+    expiresAt,
+    remember: Boolean(parsed.remember),
+  };
+}
+
+export function writeCloudSession(
+  account: LocalAccount,
+  session: LocalSession,
+): void {
+  const record: CloudSessionRecord = {
+    version: 1,
+    account: { ...account, avatar: normalizeAvatar(account.avatar) },
+    expiresAt: session.expiresAt,
+    remember: session.remember,
+  };
+  writeStorage(
+    localStorage,
+    CLOUD_SESSION_KEY,
+    JSON.stringify(record),
+    'Bulut oturumu kaydedilemedi. Tarayıcı depolamasını kontrol et.',
+  );
+}
+
+export function updateCloudSessionAccount(account: LocalAccount): void {
+  const current = getCloudSession();
+  if (!current) return;
+  writeCloudSession(account, { remember: current.remember, expiresAt: current.expiresAt });
+}
+
+export function updateCloudSessionAvatar(avatar: string | null): LocalAccount {
+  const current = getCloudSession();
+  if (!current) throw new Error('Bu cihazda etkin bir bulut oturumu yok.');
+  if (avatar !== null && !normalizeAvatar(avatar)) {
+    throw new Error('Görsel kaydedilemedi.');
+  }
+  const account = { ...current.account, avatar: avatar === null ? null : normalizeAvatar(avatar) };
+  writeCloudSession(account, { remember: current.remember, expiresAt: current.expiresAt });
+  return account;
+}
+
+export function clearCloudSession(): void {
+  removeStorage(localStorage, CLOUD_SESSION_KEY);
+}
+
+export function getLastCloudEmail(): string | null {
+  const email = readStorage(localStorage, CLOUD_EMAIL_KEY);
+  return email && email.includes('@') ? email : null;
+}
+
+export function setLastCloudEmail(email: string): void {
+  const clean = normalizeEmail(email);
+  if (!clean) return;
+  try {
+    localStorage.setItem(CLOUD_EMAIL_KEY, clean);
+  } catch {
+    /* prefilling the email is best effort */
+  }
 }
 
 export function updateLocalAccountAvatar(avatar: string | null): LocalAccount {
