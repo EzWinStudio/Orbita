@@ -17,7 +17,7 @@ PUBLIC_DIR = os.path.abspath(os.environ.get('ORBITA_PUBLIC_DIR') or os.path.join
 COOKIE_NAME = 'orbita_session'
 COOKIE_SECURE = os.environ.get('ORBITA_COOKIE_SECURE', '1') != '0'
 APP_VERSION = '2.6.2'
-GITHUB_RELEASES = 'https://github.com/EzWinStudio/ezwin-hub-app/releases/download'
+GITHUB_RELEASES = 'https://github.com/EzWinStudio/Orbita/releases/download'
 DOWNLOAD_PATTERN = re.compile(r'^Orbita-(Setup|Portable)-(\d+\.\d+\.\d+)\.exe$')
 
 app = Flask(__name__)

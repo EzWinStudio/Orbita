@@ -38,7 +38,7 @@ Bu klasörler ürün adı değişse de silinmez; mevcut WebView2 profili ilk aç
 
 ## Güncelleme
 
-Yeni sürümler [GitHub Releases](https://github.com/EzWinStudio/ezwin-hub-app/releases/latest) sayfasına yüklenir. Orbita altı saatte bir güncellemeyi kontrol eder; hazır olduğunda tepsi menüsünden tek tıkla kurabilirsin. Kurulum dosyasını indirip çalıştırmak da yeterlidir; veriler korunur.
+Yeni sürümler [GitHub Releases](https://github.com/EzWinStudio/Orbita/releases/latest) sayfasına yüklenir. Orbita altı saatte bir güncellemeyi kontrol eder; hazır olduğunda tepsi menüsünden tek tıkla kurabilirsin. Kurulum dosyasını indirip çalıştırmak da yeterlidir; veriler korunur.
 
 ## Kaldırma
 

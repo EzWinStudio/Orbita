@@ -8,8 +8,8 @@ Bu depo, Orbita ekosistemindeki her şeyi tek yerden indirmek için hazırlandı
 
 | Ne | Bağlantı |
 | --- | --- |
-| Tüm kaynak (ZIP) | [ezwin-hub-app/main.zip](https://github.com/EzWinStudio/ezwin-hub-app/archive/refs/heads/main.zip) |
-| Windows kurulum paketi | [Sürümler / Releases](https://github.com/EzWinStudio/ezwin-hub-app/releases/latest) |
+| Tüm kaynak (ZIP) | [Orbita/main.zip](https://github.com/EzWinStudio/Orbita/archive/refs/heads/main.zip) |
+| Windows kurulum paketi | [Sürümler / Releases](https://github.com/EzWinStudio/Orbita/releases/latest) |
 | Canlı web uygulaması | [orbita.wasmer.app](https://orbita.wasmer.app) |
 | Windows kurulum sayfası | [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) |
 

@@ -4,7 +4,7 @@ $output = Join-Path (Get-Location) 'EZWIN-REPOS'
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 
 $repos = @(
-    'ezwin-hub-app',
+    'Orbita',
     'ezwin-hub-website',
     'simsek-diecast-website',
     'cata-store-website',
@@ -31,7 +31,7 @@ foreach ($repo in $repos) {
 }
 
 $installer = Join-Path $output 'Orbita-Setup-2.2.0.exe'
-$installerUrl = 'https://github.com/EzWinStudio/ezwin-hub-app/releases/download/v2.2.0/Orbita-Setup-2.2.0.exe'
+$installerUrl = 'https://github.com/EzWinStudio/Orbita/releases/download/v2.2.0/Orbita-Setup-2.2.0.exe'
 Write-Host 'İndiriliyor: Windows kurulum paketi'
 Invoke-WebRequest -Uri $installerUrl -OutFile $installer
 $hash = (Get-FileHash -Algorithm SHA256 -Path $installer).Hash.ToLower()

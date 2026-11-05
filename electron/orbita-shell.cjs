@@ -623,7 +623,7 @@ async function discordGet(apiPath, token) {
     headers: {
       Authorization: `Bot ${token}`,
       Accept: 'application/json',
-      'User-Agent': 'DiscordBot (https://github.com/EzWinStudio/ezwin-hub-app, 2.2)',
+      'User-Agent': 'DiscordBot (https://github.com/EzWinStudio/Orbita, 2.2)',
     },
     redirect: 'manual',
     signal: AbortSignal.timeout(SITE_TIMEOUT_MS),
@@ -950,7 +950,7 @@ async function checkForUpdates() {
   if (!app.isPackaged || updateCheckRunning) return;
   updateCheckRunning = true;
   try {
-    const response = await fetch('https://api.github.com/repos/EzWinStudio/ezwin-hub-app/releases/latest', {
+    const response = await fetch('https://api.github.com/repos/EzWinStudio/Orbita/releases/latest', {
       headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'Orbita/2.2' },
       signal: AbortSignal.timeout(12000),
     });
