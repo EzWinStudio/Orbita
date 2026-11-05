@@ -4,6 +4,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Bot,
+  Bug,
   Building2,
   Cable,
   CalendarClock,
@@ -124,6 +125,19 @@ function activityIcon(kind: ActivityKind) {
       return CheckCircle2;
     case 'approval_rejected':
       return X;
+    case 'client':
+      return Users;
+    case 'contract':
+    case 'document':
+      return FileText;
+    case 'bug':
+      return Bug;
+    case 'automation':
+      return Zap;
+    case 'chat':
+      return MessageCircle;
+    case 'security':
+      return ShieldCheck;
     default:
       return Activity;
   }

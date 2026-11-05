@@ -135,11 +135,11 @@ export function buildInbox(data: AppData, now = Date.now()): InboxItem[] {
   }
 
   for (const task of data.tasks) {
-    if (task.done || !task.due || task.due > today) continue;
+    if (task.done || !task.due || task.due > weekAheadISO) continue;
     items.push({
       id: `task:${task.id}`,
       kind: 'task',
-      tone: task.due < today ? 'danger' : 'warning',
+      tone: task.due < today ? 'danger' : task.due === today ? 'warning' : 'info',
       at: new Date(`${task.due}T23:59:59`).getTime(),
       companyId: task.companyId,
       title: task.title,

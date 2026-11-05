@@ -18,7 +18,7 @@ Web verileri tarayıcıda kalır. Cihazlar arasında ortak veri için Ayarlar > 
 
 | | |
 | --- | --- |
-| Dosya | `Orbita-Setup-2.6.0.exe` |
+| Dosya | `Orbita-Setup-2.6.1.exe` |
 | İşletim sistemi | Windows 10 / 11, 64 bit |
 | Çalışma zamanı | Gömülü Chromium (Electron) — harici WebView2 gerekmez |
 | Disk alanı | yaklaşık 360 MB |

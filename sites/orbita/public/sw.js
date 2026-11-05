@@ -1,4 +1,4 @@
-const CACHE = 'orbita-shell-v9';
+const CACHE = 'orbita-shell-v10';
 const SHELL = ['./', './index.html', './site.webmanifest'];
 
 self.addEventListener('install', (event) => {

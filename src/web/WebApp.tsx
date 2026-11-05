@@ -14,6 +14,7 @@ import { Operations } from '../pages/Operations';
 import { Communication } from '../pages/Communication';
 import { Business } from '../pages/Business';
 import { Admin } from '../pages/Admin';
+import { Assistant } from '../pages/Assistant';
 import { TasksNotes } from '../pages/TasksNotes';
 import { Tools } from '../pages/Tools';
 import { Translate } from '../pages/Translate';
@@ -43,6 +44,7 @@ const WEB_PAGES: Page[] = [
   'communication',
   'business',
   'admin',
+  'assistant',
   'tasks',
   'tools',
   'translate',
@@ -175,6 +177,9 @@ export function WebApp() {
       break;
     case 'admin':
       content = <Admin navigate={navigate} />;
+      break;
+    case 'assistant':
+      content = <Assistant navigate={navigate} />;
       break;
     case 'tasks':
       content = <TasksNotes intent={intent} onIntentHandled={handleIntent} />;

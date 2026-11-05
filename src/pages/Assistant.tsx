@@ -3,6 +3,7 @@ import { ArrowUp, Bot, Eraser, Sparkles, UserRound } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { useApp, useAppData } from '../store';
 import { useI18n } from '../i18n';
+import type { TranslationKey } from '../i18n/core';
 import { companyHealthRows, buildInsights, openBugs, expiringContracts, employeeRanking } from '../lib/enterprise';
 import { formatMoney, todayISO } from '../lib/format';
 import type { AssistantMessage, AssistantStatus } from '../types';
@@ -15,7 +16,7 @@ interface ChatItem extends AssistantMessage {
   suggestions?: string[];
 }
 
-const STARTERS = [
+const STARTERS: TranslationKey[] = [
   'Şirket analizi',
   'Bu haftanın özeti',
   'Açık görevlerim',
@@ -59,8 +60,7 @@ export function Assistant({ navigate }: AssistantProps) {
     {
       id: 1,
       role: 'assistant',
-      content:
-        'Merhaba, ben **Orbita Asistan**. Şirket verilerini analiz edebilir, uygulamanı yönetebilir ve genel sorularını yanıtlayabilirim.\n\nNe yapmak istersin?',
+      content: t('Merhaba, ben **Orbita Asistan**. Şirket verilerini analiz edebilir, uygulamanı yönetebilir ve genel sorularını yanıtlayabilirim.\n\nNe yapmak istersin?'),
       source: 'local',
       suggestions: STARTERS.slice(0, 4),
     },
@@ -87,6 +87,13 @@ export function Assistant({ navigate }: AssistantProps) {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, busy]);
 
+  function matchesCommand(text: string, key: TranslationKey): boolean {
+    return (
+      text.includes(key.toLocaleLowerCase()) ||
+      text.includes(t(key).toLocaleLowerCase())
+    );
+  }
+
   function localReply(raw: string): { content: string; navigate?: Page; suggestions?: string[] } | null {
     const text = raw.toLocaleLowerCase('tr');
     const selected = data.companies.find((company) => company.id === analysisCompany) ?? null;
@@ -94,7 +101,7 @@ export function Assistant({ navigate }: AssistantProps) {
     const scopedHealth = selected ? health.filter((row) => row.companyId === selected.id) : health;
     const currency = data.settings.currency;
 
-    if (text.includes('şirket analizi') || text.includes('şirket analiz')) {
+    if (matchesCommand(text, 'Şirket analizi') || text.includes('şirket analiz')) {
       const revenue = scopedHealth.reduce((sum, row) => sum + row.revenue, 0);
       const expense = scopedHealth.reduce((sum, row) => sum + row.expense, 0);
       const headcount = scopedHealth.reduce((sum, row) => sum + row.headcount, 0);
@@ -129,7 +136,7 @@ export function Assistant({ navigate }: AssistantProps) {
       };
     }
 
-    if (text.includes('gelir') && (text.includes('gider') || text.includes('özet'))) {
+    if (matchesCommand(text, 'Gelir gider özeti') || (text.includes('gelir') && (text.includes('gider') || text.includes('özet')))) {
       const lines = [`**${t('Gelir gider özeti')}**`, ''];
       for (const row of scopedHealth) {
         lines.push(
@@ -139,7 +146,7 @@ export function Assistant({ navigate }: AssistantProps) {
       return { content: lines.join('\n'), navigate: 'finance', suggestions: ['Şirket analizi', 'Açık hatalar'] };
     }
 
-    if (text.includes('açık hata') || text.includes('hatalar')) {
+    if (matchesCommand(text, 'Açık hatalar') || text.includes('açık hata') || text.includes('hatalar')) {
       const list = openBugs(data.bugs).filter((bug) => !selected || bug.companyId === selected.id);
       if (list.length === 0) {
         return { content: t('Açık hata kaydı yok.'), navigate: 'business' };
@@ -151,7 +158,7 @@ export function Assistant({ navigate }: AssistantProps) {
       return { content: lines.join('\n'), navigate: 'business', suggestions: ['Sözleşme uyarıları', 'Şirket analizi'] };
     }
 
-    if (text.includes('sözleşme')) {
+    if (matchesCommand(text, 'Sözleşme uyarıları') || text.includes('sözleşme')) {
       const list = expiringContracts(data.contracts, 30).filter((contract) => !selected || contract.companyId === selected.id);
       if (list.length === 0) {
         return { content: t('30 gün içinde sona eren sözleşme yok.'), navigate: 'business' };
@@ -161,6 +168,72 @@ export function Assistant({ navigate }: AssistantProps) {
         lines.push(`• ${contract.title}${contract.endDate ? ` — ${contract.endDate}` : ''}`);
       }
       return { content: lines.join('\n'), navigate: 'business', suggestions: ['Şirket analizi', 'Gelir gider özeti'] };
+    }
+
+    if (matchesCommand(text, 'Bu haftanın özeti')) {
+      const weekAgo = Date.now() - 7 * 86_400_000;
+      const scopedFinance = data.finance.filter(
+        (entry) => entry.createdAt >= weekAgo && (!selected || entry.companyId === selected.id),
+      );
+      const income = scopedFinance
+        .filter((entry) => entry.kind === 'income')
+        .reduce((sum, entry) => sum + entry.amount, 0);
+      const expense = scopedFinance
+        .filter((entry) => entry.kind === 'expense')
+        .reduce((sum, entry) => sum + entry.amount, 0);
+      const doneTasks = data.tasks.filter(
+        (task) =>
+          task.done &&
+          typeof task.completedAt === 'number' &&
+          task.completedAt >= weekAgo &&
+          (!selected || task.companyId === selected.id),
+      ).length;
+      const openTasks = data.tasks.filter(
+        (task) => !task.done && (!selected || task.companyId === selected.id),
+      ).length;
+      const bugs = openBugs(data.bugs).filter(
+        (bug) => !selected || bug.companyId === selected.id,
+      ).length;
+      const pending = data.approvals.filter(
+        (approval) =>
+          approval.status === 'pending' && (!selected || approval.companyId === selected.id),
+      ).length;
+      const lines = [
+        `**${t('Bu hafta')} · ${selected ? selected.name : t('Tüm şirketler')}**`,
+        '',
+        `${t('Gelir')}: ${formatMoney(income, currency)}`,
+        `${t('Gider')}: ${formatMoney(expense, currency)}`,
+        `${t('Net sonuç')}: ${formatMoney(income - expense, currency)}`,
+        '',
+        `${t('Tamamlanan görev')}: ${doneTasks} · ${t('Açık görev')}: ${openTasks}`,
+        `${t('Açık hata')}: ${bugs} · ${t('Bekleyen onay')}: ${pending}`,
+      ];
+      return {
+        content: lines.join('\n'),
+        navigate: 'admin',
+        suggestions: ['Şirket analizi', 'Açık görevlerim'],
+      };
+    }
+
+    if (matchesCommand(text, 'Açık görevlerim')) {
+      const list = data.tasks
+        .filter((task) => !task.done && (!selected || task.companyId === selected.id))
+        .sort((a, b) => (a.due ?? '9999-12-31').localeCompare(b.due ?? '9999-12-31'));
+      if (list.length === 0) {
+        return { content: t('Açık görev yok'), navigate: 'tasks' };
+      }
+      const lines = [
+        `**${t('Açık görev')} · ${list.length}**`,
+        '',
+        ...list
+          .slice(0, 12)
+          .map((task) => `• ${task.title}${task.due ? ` — ${task.due}` : ''}`),
+      ];
+      return {
+        content: lines.join('\n'),
+        navigate: 'tasks',
+        suggestions: ['Bu haftanın özeti', 'Şirket analizi'],
+      };
     }
 
     if (text.includes('bugün') && text.includes('toplantı')) {
@@ -180,16 +253,39 @@ export function Assistant({ navigate }: AssistantProps) {
   }
 
   async function send(raw?: string) {
-    const text = (raw ?? input).trim();
-    if (!text || busy) return;
+    const rawText = (raw ?? input).trim();
+    if (!rawText || busy) return;
+    const starter = STARTERS.find((key) => key === rawText || t(key) === rawText);
+    const text = starter ?? rawText;
     setBusy(true);
     setInput('');
-    const userItem: ChatItem = { id: Date.now(), role: 'user', content: text };
+    const userItem: ChatItem = {
+      id: Date.now(),
+      role: 'user',
+      content: starter ? t(starter) : rawText,
+    };
     const history: AssistantMessage[] = [...messages, userItem]
       .filter((item) => item.role === 'user' || item.role === 'assistant')
       .slice(-10)
       .map((item) => ({ role: item.role, content: item.content }));
     setMessages((prev) => [...prev, userItem]);
+
+    if (matchesCommand(text, 'Güncellemeleri kontrol et')) {
+      const result = await actions.checkUpdates();
+      setBusy(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: 'assistant',
+          content: result?.message || t('Güncelleme durumu alınamadı.'),
+          source: 'local',
+          suggestions: STARTERS.slice(0, 4),
+        },
+      ]);
+      setSuggestions(STARTERS.slice(0, 4));
+      return;
+    }
 
     const local = localReply(text);
     if (local) {
@@ -219,7 +315,7 @@ export function Assistant({ navigate }: AssistantProps) {
         {
           id: Date.now() + 1,
           role: 'assistant',
-          content: 'Şu an yanıt veremedim. Biraz sonra tekrar dene.',
+          content: t('Şu an yanıt veremedim. Biraz sonra tekrar dene.'),
           source: 'local',
         },
       ]);
@@ -246,8 +342,7 @@ export function Assistant({ navigate }: AssistantProps) {
       {
         id: Date.now(),
         role: 'assistant',
-        content:
-          'Sohbet temizlendi. **Orbita Asistan** hazır: özet isteyebilir, kayıt ekleyebilir veya genel bir soru sorabilirsin.',
+        content: t('Sohbet temizlendi. **Orbita Asistan** hazır: özet isteyebilir, kayıt ekleyebilir veya genel bir soru sorabilirsin.'),
         source: 'local',
         suggestions: STARTERS.slice(0, 4),
       },
@@ -265,10 +360,14 @@ export function Assistant({ navigate }: AssistantProps) {
           <div className="assistant-head-actions">
             <span className="assistant-status">
               <Sparkles size={12} />
-              {status ? `${status.modelLabel} · hazır` : 'hazırlanıyor…'}
+              {status
+                ? status.modelLabel
+                  ? `${status.modelLabel} · ${t('hazır')}`
+                  : t('Yerel analiz')
+                : t('hazırlanıyor…')}
             </span>
             <button type="button" className="btn btn-ghost btn-sm" onClick={clearChat}>
-              <Eraser size={13} /> Temizle
+              <Eraser size={13} /> {t('Temizle')}
             </button>
           </div>
         }
@@ -319,12 +418,12 @@ export function Assistant({ navigate }: AssistantProps) {
                     className="btn btn-ghost btn-sm assistant-nav"
                     onClick={() => navigate(item.navigate as Page)}
                   >
-                    Sayfayı aç
+                    {t('Sayfayı aç')}
                   </button>
                 ) : null}
                 {item.source ? (
                   <span className={`assistant-source ${item.source}`}>
-                    {item.source === 'local' ? 'yerel' : 'model'}
+                    {item.source === 'local' ? t('Yerel') : t('Model')}
                   </span>
                 ) : null}
               </div>
@@ -354,7 +453,7 @@ export function Assistant({ navigate }: AssistantProps) {
               onClick={() => void send(suggestion)}
               disabled={busy}
             >
-              {suggestion}
+              {t(suggestion as TranslationKey)}
             </button>
           ))}
         </div>
@@ -377,7 +476,7 @@ export function Assistant({ navigate }: AssistantProps) {
                 void send();
               }
             }}
-            placeholder="Bir komut yaz veya soru sor… Örn. “Görev ekle: video kurgusu”"
+            placeholder={t('Bir komut yaz veya soru sor… Örn. “Görev ekle: video kurgusu”')}
             rows={2}
             maxLength={2000}
           />
@@ -385,14 +484,14 @@ export function Assistant({ navigate }: AssistantProps) {
             type="submit"
             className="btn btn-primary assistant-send"
             disabled={busy || !input.trim()}
-            aria-label="Gönder"
+            aria-label={t('Gönder')}
           >
             <ArrowUp size={16} />
           </button>
         </form>
 
         <p className="assistant-foot">
-          Yerel komutlar cihazında çalışır. Yalnızca genel bilgi soruları model servisine gönderilir.
+          {t('Yerel komutlar cihazında çalışır. Yalnızca genel bilgi soruları model servisine gönderilir.')}
         </p>
       </div>
     </>

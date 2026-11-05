@@ -4,8 +4,11 @@ import {
   BellRing,
   Building2,
   CalendarClock,
+  CalendarDays,
   Check,
   ChevronLeft,
+  ChevronRight,
+  List as ListIcon,
   Lock,
   Megaphone,
   MessagesSquare,
@@ -62,6 +65,10 @@ interface CommunicationProps {
   navigate: (page: Page, companyId?: string | null) => void;
 }
 
+function isoDay(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function Communication({ navigate }: CommunicationProps) {
   const data = useAppData();
   const { actions, confirm } = useApp();
@@ -73,6 +80,11 @@ export function Communication({ navigate }: CommunicationProps) {
   const [threadOpen, setThreadOpen] = useState(false);
   const [announcementOpen, setAnnouncementOpen] = useState(false);
   const [meetingOpen, setMeetingOpen] = useState(false);
+  const [meetingView, setMeetingView] = useState<'list' | 'calendar'>('list');
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
@@ -201,6 +213,38 @@ export function Communication({ navigate }: CommunicationProps) {
       return b.updatedAt - a.updatedAt;
     });
   }, [data.meetings]);
+
+  const calendar = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const first = new Date(year, month, 1);
+    const offset = (first.getDay() + 6) % 7;
+    const start = new Date(year, month, 1 - offset);
+    const days = Array.from({ length: 42 }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      return date;
+    });
+    const byDay = new Map<string, Meeting[]>();
+    for (const meeting of data.meetings) {
+      const list = byDay.get(meeting.date) ?? [];
+      list.push(meeting);
+      byDay.set(meeting.date, list);
+    }
+    for (const list of byDay.values()) list.sort((a, b) => a.time.localeCompare(b.time));
+    const weekdayLabels = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(2024, 0, 1 + index);
+      return date.toLocaleDateString(locale, { weekday: 'short' });
+    });
+    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+    return {
+      days,
+      byDay,
+      weekdayLabels,
+      label: calendarMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' }),
+      monthCount: data.meetings.filter((meeting) => meeting.date.startsWith(monthPrefix)).length,
+    };
+  }, [calendarMonth, data.meetings, locale]);
 
   const visibleInbox = useMemo(
     () => (inboxFilter === 'unread' ? unread : inbox),
@@ -850,7 +894,117 @@ export function Communication({ navigate }: CommunicationProps) {
                 />
               </div>
 
-              {sortedMeetings.length === 0 ? (
+              <div className="comm-meeting-viewbar">
+                <div className="comm-view-toggle" role="group" aria-label={t('Toplantı takvimi')}>
+                  <button
+                    type="button"
+                    className={`comm-view-btn ${meetingView === 'list' ? 'is-active' : ''}`}
+                    onClick={() => setMeetingView('list')}
+                    aria-pressed={meetingView === 'list'}
+                  >
+                    <ListIcon size={13} /> {t('Liste')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`comm-view-btn ${meetingView === 'calendar' ? 'is-active' : ''}`}
+                    onClick={() => setMeetingView('calendar')}
+                    aria-pressed={meetingView === 'calendar'}
+                  >
+                    <CalendarDays size={13} /> {t('Takvim')}
+                  </button>
+                </div>
+                {meetingView === 'calendar' ? (
+                  <div className="comm-calendar-nav">
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      onClick={() =>
+                        setCalendarMonth(
+                          new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1),
+                        )
+                      }
+                      aria-label={t('Önceki ay')}
+                      title={t('Önceki ay')}
+                    >
+                      <ChevronLeft size={15} />
+                    </button>
+                    <strong>{calendar.label}</strong>
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      onClick={() =>
+                        setCalendarMonth(
+                          new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1),
+                        )
+                      }
+                      aria-label={t('Sonraki ay')}
+                      title={t('Sonraki ay')}
+                    >
+                      <ChevronRight size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-mini"
+                      onClick={() => {
+                        const now = new Date();
+                        setCalendarMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+                      }}
+                    >
+                      {t('Bu ay')}
+                    </button>
+                    <span className="comm-calendar-count">
+                      {t('{count} toplantı', { count: calendar.monthCount })}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+
+              {meetingView === 'calendar' ? (
+                <div className="card comm-calendar">
+                  <div className="comm-calendar-weekdays">
+                    {calendar.weekdayLabels.map((label) => (
+                      <span key={label}>{label}</span>
+                    ))}
+                  </div>
+                  <div className="comm-calendar-grid">
+                    {calendar.days.map((day) => {
+                      const key = isoDay(day);
+                      const dayMeetings = calendar.byDay.get(key) ?? [];
+                      const outside = day.getMonth() !== calendarMonth.getMonth();
+                      return (
+                        <div
+                          key={key}
+                          className={`comm-calendar-day${outside ? ' is-outside' : ''}${key === today ? ' is-today' : ''}${dayMeetings.length > 0 ? ' has-meetings' : ''}`}
+                        >
+                          <span className="comm-calendar-date">{day.getDate()}</span>
+                          <div className="comm-calendar-items">
+                            {dayMeetings.slice(0, 3).map((meeting) => (
+                              <button
+                                key={meeting.id}
+                                type="button"
+                                className={`comm-calendar-item status-${meeting.status}`}
+                                title={`${meeting.time} · ${meeting.title}`}
+                                onClick={() => {
+                                  setEditingMeeting(meeting);
+                                  setMeetingOpen(true);
+                                }}
+                              >
+                                <span>{meeting.time}</span>
+                                {meeting.title}
+                              </button>
+                            ))}
+                            {dayMeetings.length > 3 ? (
+                              <span className="comm-calendar-more">
+                                +{dayMeetings.length - 3}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : sortedMeetings.length === 0 ? (
                 <div className="card">
                   <EmptyState
                     icon={<CalendarClock size={20} />}

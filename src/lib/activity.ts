@@ -1,6 +1,7 @@
 import type { AppData } from '../types';
 import type { Page } from '../nav';
 import type { TFunction } from '../i18n/core';
+import { BUG_STATUS_LABEL } from '../constants';
 import { formatDate, formatMoney, monthLabel } from './format';
 
 export type ActivityKind =
@@ -25,7 +26,14 @@ export type ActivityKind =
   | 'meeting'
   | 'approval'
   | 'approval_approved'
-  | 'approval_rejected';
+  | 'approval_rejected'
+  | 'client'
+  | 'contract'
+  | 'document'
+  | 'bug'
+  | 'automation'
+  | 'chat'
+  | 'security';
 
 export type ActivityTone = 'default' | 'mint' | 'amber' | 'danger';
 
@@ -337,6 +345,137 @@ export function buildActivity(data: AppData, t: TFunction, limit = 8): ActivityI
         page: 'operations',
       });
     }
+  }
+
+  for (const client of data.clients) {
+    const updated = client.updatedAt > client.createdAt + 1000;
+    items.push({
+      id: `client-${client.id}`,
+      kind: 'client',
+      tone: 'default',
+      at: client.updatedAt,
+      title: updated ? t('Müşteri güncellendi') : t('Müşteri eklendi'),
+      meta: [client.name, companyName.get(client.companyId)].filter(Boolean).join(' · '),
+      companyId: client.companyId,
+      page: 'business',
+    });
+  }
+
+  for (const contract of data.contracts) {
+    const updated = contract.updatedAt > contract.createdAt + 1000;
+    items.push({
+      id: `contract-${contract.id}`,
+      kind: 'contract',
+      tone: contract.status === 'expired' || contract.status === 'terminated' ? 'danger' : 'default',
+      at: contract.updatedAt,
+      title: updated ? t('Sözleşme güncellendi') : t('Sözleşme eklendi'),
+      meta: [contract.title, contract.counterparty, companyName.get(contract.companyId)]
+        .filter(Boolean)
+        .join(' · '),
+      companyId: contract.companyId,
+      page: 'business',
+    });
+  }
+
+  for (const document of data.documents) {
+    const updated = document.updatedAt > document.createdAt + 1000;
+    items.push({
+      id: `document-${document.id}`,
+      kind: 'document',
+      tone: 'default',
+      at: document.updatedAt,
+      title: updated ? t('Belge güncellendi') : t('Belge kaydedildi'),
+      meta: [document.title, companyName.get(document.companyId)].filter(Boolean).join(' · '),
+      companyId: document.companyId,
+      page: 'business',
+    });
+  }
+
+  for (const bug of data.bugs) {
+    const updated = bug.updatedAt > bug.createdAt + 1000;
+    items.push({
+      id: `bug-${bug.id}`,
+      kind: 'bug',
+      tone:
+        bug.status === 'resolved' || bug.status === 'closed'
+          ? 'mint'
+          : bug.severity === 'critical' || bug.severity === 'high'
+            ? 'danger'
+            : 'amber',
+      at: bug.updatedAt,
+      title: updated ? t('Hata kaydı güncellendi') : t('Hata kaydı açıldı'),
+      meta: `${bug.title} · ${t(BUG_STATUS_LABEL[bug.status])} · ${companyName.get(bug.companyId) ?? t('Şirketsiz')}`,
+      companyId: bug.companyId,
+      page: 'business',
+    });
+  }
+
+  for (const rule of data.automationRules) {
+    const updated = rule.updatedAt > rule.createdAt + 1000;
+    items.push({
+      id: `automation-${rule.id}`,
+      kind: 'automation',
+      tone: 'amber',
+      at: rule.updatedAt,
+      title: updated ? t('Otomasyon kuralı güncellendi') : t('Otomasyon kuralı oluşturuldu'),
+      meta: [rule.title, companyName.get(rule.companyId)].filter(Boolean).join(' · '),
+      companyId: rule.companyId,
+      page: 'business',
+    });
+    if (rule.lastRun) {
+      items.push({
+        id: `automation-run-${rule.id}`,
+        kind: 'automation',
+        tone: 'mint',
+        at: rule.lastRun,
+        title: t('Otomasyon çalıştırıldı; görev oluşturuldu'),
+        meta: [rule.title, companyName.get(rule.companyId)].filter(Boolean).join(' · '),
+        companyId: rule.companyId,
+        page: 'business',
+      });
+    }
+  }
+
+  const threadCompany = new Map(
+    data.chatThreads.map((thread) => [thread.id, thread.companyId]),
+  );
+  for (const thread of data.chatThreads) {
+    items.push({
+      id: `chat-thread-${thread.id}`,
+      kind: 'chat',
+      tone: 'default',
+      at: thread.createdAt,
+      title: t('Sohbet açıldı'),
+      meta: companyName.get(thread.companyId) ?? t('Şirketsiz'),
+      companyId: thread.companyId,
+      page: 'communication',
+    });
+  }
+  for (const message of data.chatMessages) {
+    const companyId = threadCompany.get(message.threadId) ?? null;
+    items.push({
+      id: `chat-message-${message.id}`,
+      kind: 'chat',
+      tone: 'default',
+      at: message.createdAt,
+      title: t('Mesaj gönderildi'),
+      meta: `${message.author}: ${message.body.length > 90 ? `${message.body.slice(0, 90)}…` : message.body}`,
+      companyId,
+      page: 'communication',
+    });
+  }
+
+  for (const event of data.securityEvents) {
+    items.push({
+      id: `security-${event.id}`,
+      kind: 'security',
+      tone: event.kind === 'approval' ? 'amber' : 'default',
+      at: event.at,
+      title: t('Güvenlik olayı'),
+      meta: `${event.actor} · ${event.detail}`,
+      companyId: event.companyId,
+      page: 'admin',
+    });
   }
 
   return items.filter((item) => item.at > 0).sort((a, b) => b.at - a.at).slice(0, limit);

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Activity,
+  Bot,
   BriefcaseBusiness,
   Building2,
   Calculator,
@@ -50,6 +51,7 @@ const WORK_ITEMS: { page: Page; label: TranslationKey; icon: typeof LayoutDashbo
   { page: 'communication', label: 'İletişim', icon: MessagesSquare },
   { page: 'business', label: 'İş merkezi', icon: BriefcaseBusiness },
   { page: 'admin', label: 'Yönetim', icon: ShieldCheck },
+  { page: 'assistant', label: 'Asistan', icon: Bot },
   { page: 'tasks', label: 'Görev & Notlar', icon: ListChecks },
   { page: 'tools', label: 'Hesap & Kur', icon: Calculator },
   { page: 'translate', label: 'Çeviri', icon: Languages },
