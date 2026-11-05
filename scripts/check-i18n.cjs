@@ -2,9 +2,13 @@ const fs = require('fs');
 const path = require('path');
 
 const enSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'i18n', 'en.ts'), 'utf8');
-const enKeys = [...enSource.matchAll(/^\s*"((?:[^"\\]|\\.)*)"\s*:/gm)].map((m) => m[1]);
+const enEnterpriseSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'i18n', 'en-enterprise.ts'), 'utf8');
+const enKeys = [
+  ...[...enSource.matchAll(/^\s*"((?:[^"\\]|\\.)*)"\s*:/gm)].map((m) => m[1]),
+  ...[...enEnterpriseSource.matchAll(/^\s*"((?:[^"\\]|\\.)*)"\s*:/gm)].map((m) => m[1]),
+];
 
-const files = ['shell.ts', 'business.ts', 'work.ts', 'mail.ts', 'modals.ts', 'youtube.ts', 'studio.ts', 'operations.ts', 'web.ts'];
+const files = ['shell.ts', 'business.ts', 'work.ts', 'mail.ts', 'modals.ts', 'youtube.ts', 'studio.ts', 'operations.ts', 'finance.ts', 'communication.ts', 'enterprise.ts', 'web.ts'];
 const rows = [];
 for (const file of files) {
   const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'i18n', 'dicts', file), 'utf8');

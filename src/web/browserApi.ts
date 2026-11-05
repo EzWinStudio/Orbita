@@ -3,33 +3,70 @@ import { PRODUCT_NAME } from '../lib/product';
 import { normalizeLanguage } from '../i18n/languages';
 import { scopedStorageKey } from './workspaceScope';
 import type {
+  Announcement,
+  AnnouncementAudience,
+  AnnouncementPriority,
+  AnnouncementStatus,
+  AnnouncementVisibility,
   AppData,
   Approval,
   ApprovalStatus,
   Asset,
   AssetType,
+  AutomationCadence,
+  AutomationRule,
+  BillingCycle,
+  BugReport,
+  BugSeverity,
+  BugStatus,
+  ChatMessage,
+  ChatScope,
+  ChatThread,
+  Client,
+  ClientStatus,
   Company,
   CompanyCategory,
+  CompanyDocument,
   CompanyStatus,
+  Contract,
+  ContractKind,
+  ContractStatus,
+  CustomerPayment,
+  CustomerPaymentStatus,
   Department,
+  DocumentCategory,
   Employee,
   EmployeeStatus,
   FinanceEntry,
   EzwinApi,
   HistoryPoint,
+  Invoice,
+  InvoiceStatus,
   LanguageCode,
   LinkItem,
+  Meeting,
+  MeetingStatus,
   Meta,
   Note,
+  NotificationRead,
+  PaymentMethod,
   PerformanceReview,
   PermissionKey,
   Project,
   ProjectStatus,
   RatesPayload,
   Role,
+  SalaryPayment,
+  SalaryStatus,
+  SecurityEvent,
+  SecurityEventKind,
   ServiceStatus,
   Settings,
+  Subscription,
+  SubscriptionKind,
+  SubscriptionStatus,
   Task,
+  TaskPriority,
 } from '../types';
 
 const STORAGE_KEY = 'ezwin.hub.web.v1';
@@ -37,7 +74,7 @@ const SAVED_AT_KEY = 'ezwin.hub.web.savedAt.v1';
 const RATES_KEY = 'ezwin.hub.web.rates.v1';
 const RATES_URL = 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,EUR';
 const RATES_MAX_AGE = 15 * 60 * 1000;
-const WEB_VERSION = '2.4.0';
+const WEB_VERSION = '2.6.0';
 
 const COMPANY_STATUSES: CompanyStatus[] = ['active', 'maintenance', 'paused'];
 const COMPANY_CATEGORIES: CompanyCategory[] = [
@@ -50,6 +87,42 @@ const COMPANY_CATEGORIES: CompanyCategory[] = [
   'other',
 ];
 const ASSET_TYPES: AssetType[] = ['discord', 'pterodactyl', 'website'];
+const SALARY_STATUSES: SalaryStatus[] = ['planned', 'paid'];
+const INVOICE_STATUSES: InvoiceStatus[] = ['draft', 'sent', 'paid', 'canceled'];
+const PAYMENT_METHODS: PaymentMethod[] = ['transfer', 'card', 'cash', 'other'];
+const PAYMENT_STATUSES: CustomerPaymentStatus[] = ['pending', 'received'];
+const SUBSCRIPTION_KINDS: SubscriptionKind[] = ['subscription', 'license'];
+const BILLING_CYCLES: BillingCycle[] = ['monthly', 'yearly'];
+const SUBSCRIPTION_STATUSES: SubscriptionStatus[] = ['active', 'paused', 'canceled'];
+const CHAT_SCOPES: ChatScope[] = ['company', 'department', 'direct'];
+const ANNOUNCEMENT_AUDIENCES: AnnouncementAudience[] = ['company', 'department'];
+const ANNOUNCEMENT_VISIBILITIES: AnnouncementVisibility[] = ['team', 'admin'];
+const ANNOUNCEMENT_STATUSES: AnnouncementStatus[] = ['draft', 'published', 'archived'];
+const ANNOUNCEMENT_PRIORITIES: AnnouncementPriority[] = ['normal', 'important', 'urgent'];
+const MEETING_STATUSES: MeetingStatus[] = ['planned', 'done', 'canceled'];
+const CLIENT_STATUSES: ClientStatus[] = ['lead', 'active', 'paused', 'lost'];
+const CONTRACT_STATUSES: ContractStatus[] = ['active', 'pending', 'expired', 'terminated'];
+const CONTRACT_KINDS: ContractKind[] = ['service', 'supplier', 'nda', 'employment', 'other'];
+const DOCUMENT_CATEGORIES: DocumentCategory[] = [
+  'contract',
+  'finance',
+  'hr',
+  'legal',
+  'project',
+  'other',
+];
+const BUG_SEVERITIES: BugSeverity[] = ['low', 'medium', 'high', 'critical'];
+const BUG_STATUSES: BugStatus[] = ['open', 'in_progress', 'resolved', 'closed'];
+const AUTOMATION_CADENCES: AutomationCadence[] = ['daily', 'weekly', 'monthly'];
+const SECURITY_EVENT_KINDS: SecurityEventKind[] = [
+  'role',
+  'approval',
+  'backup',
+  'import',
+  'security',
+  'account',
+];
+const TASK_PRIORITIES: TaskPriority[] = ['low', 'med', 'high'];
 const START_PAGES = [
   'dashboard',
   'services',
@@ -281,6 +354,7 @@ function normalizeTask(raw: unknown, companyIds: Set<string>): Task | null {
     priority,
     due: due || null,
     done: Boolean(raw.done),
+    assigneeId: asString(raw.assigneeId) || null,
     createdAt: asNumber(raw.createdAt, Date.now()),
     completedAt: Boolean(raw.done) ? asNumber(raw.completedAt, 0) || null : null,
   };
@@ -323,6 +397,488 @@ function normalizeFinance(raw: unknown, companyIds: Set<string>): FinanceEntry |
     date,
     createdAt: asNumber(raw.createdAt, Date.now()),
   };
+}
+
+function normalizeSalary(
+  raw: unknown,
+  companyIds: Set<string>,
+  employeesById: Map<string, Employee>,
+): SalaryPayment | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const amount = asNumber(raw.amount, 0);
+  if (!(amount > 0)) return null;
+  const period = asString(raw.period);
+  if (!/^\d{4}-\d{2}$/.test(period)) return null;
+  const employeeIdRaw = asString(raw.employeeId);
+  const employee = employeesById.get(employeeIdRaw);
+  const employeeId = employee && employee.companyId === companyId ? employee.id : null;
+  const employeeName = employee?.name ?? asString(raw.employeeName);
+  if (!employeeName) return null;
+  const status: SalaryStatus = SALARY_STATUSES.includes(raw.status as SalaryStatus)
+    ? (raw.status as SalaryStatus)
+    : 'planned';
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const paidAt = status === 'paid' ? asNumber(raw.paidAt, createdAt) : null;
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    employeeId,
+    employeeName,
+    period,
+    amount,
+    status,
+    paidAt,
+    note: asString(raw.note),
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeInvoice(raw: unknown, companyIds: Set<string>): Invoice | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const customerName = asString(raw.customerName);
+  if (!customerName) return null;
+  const amount = asNumber(raw.amount, 0);
+  if (!(amount > 0)) return null;
+  const issueDate = asString(raw.issueDate);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(issueDate)) return null;
+  const dueRaw = asString(raw.dueDate);
+  const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(dueRaw) ? dueRaw : issueDate;
+  const id = asString(raw.id) || uid();
+  const status: InvoiceStatus = INVOICE_STATUSES.includes(raw.status as InvoiceStatus)
+    ? (raw.status as InvoiceStatus)
+    : 'sent';
+  return {
+    id,
+    companyId,
+    number: asString(raw.number) || `FTR-${issueDate.slice(0, 4)}-${id.slice(0, 4).toUpperCase()}`,
+    customerName,
+    customerEmail: asString(raw.customerEmail),
+    amount,
+    taxRate: Math.min(100, Math.max(0, asNumber(raw.taxRate, 0))),
+    issueDate,
+    dueDate,
+    status,
+    note: asString(raw.note),
+    createdAt: asNumber(raw.createdAt, Date.now()),
+    updatedAt: asNumber(raw.updatedAt, Date.now()),
+  };
+}
+
+function normalizeCustomerPayment(
+  raw: unknown,
+  companyIds: Set<string>,
+  invoicesById: Map<string, Invoice>,
+): CustomerPayment | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const amount = asNumber(raw.amount, 0);
+  if (!(amount > 0)) return null;
+  const date = asString(raw.date);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const invoiceIdRaw = asString(raw.invoiceId);
+  const invoice = invoicesById.get(invoiceIdRaw);
+  const invoiceId = invoice && invoice.companyId === companyId ? invoice.id : null;
+  const customerName = asString(raw.customerName) || invoice?.customerName || '';
+  if (!customerName) return null;
+  const status: CustomerPaymentStatus = PAYMENT_STATUSES.includes(
+    raw.status as CustomerPaymentStatus,
+  )
+    ? (raw.status as CustomerPaymentStatus)
+    : 'received';
+  const method: PaymentMethod = PAYMENT_METHODS.includes(raw.method as PaymentMethod)
+    ? (raw.method as PaymentMethod)
+    : 'transfer';
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    customerName,
+    invoiceId,
+    amount,
+    method,
+    status,
+    date,
+    note: asString(raw.note),
+    createdAt: asNumber(raw.createdAt, Date.now()),
+    updatedAt: asNumber(raw.updatedAt, Date.now()),
+  };
+}
+
+function normalizeSubscription(raw: unknown, companyIds: Set<string>): Subscription | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const name = asString(raw.name);
+  if (!name) return null;
+  const amount = Math.max(0, asNumber(raw.amount, 0));
+  const nextRaw = asString(raw.nextRenewal);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(nextRaw)) return null;
+  const kind: SubscriptionKind = SUBSCRIPTION_KINDS.includes(raw.kind as SubscriptionKind)
+    ? (raw.kind as SubscriptionKind)
+    : 'subscription';
+  const cycle: BillingCycle = BILLING_CYCLES.includes(raw.cycle as BillingCycle)
+    ? (raw.cycle as BillingCycle)
+    : 'monthly';
+  const status: SubscriptionStatus = SUBSCRIPTION_STATUSES.includes(
+    raw.status as SubscriptionStatus,
+  )
+    ? (raw.status as SubscriptionStatus)
+    : 'active';
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    name,
+    vendor: asString(raw.vendor),
+    kind,
+    amount,
+    cycle,
+    nextRenewal: nextRaw,
+    status,
+    note: asString(raw.note),
+    createdAt: asNumber(raw.createdAt, Date.now()),
+    updatedAt: asNumber(raw.updatedAt, Date.now()),
+  };
+}
+
+function normalizeChatThread(
+  raw: unknown,
+  companyIds: Set<string>,
+  departmentsById: Map<string, Department>,
+  employeesById: Map<string, Employee>,
+): ChatThread | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const scope: ChatScope = CHAT_SCOPES.includes(raw.scope as ChatScope)
+    ? (raw.scope as ChatScope)
+    : 'company';
+  const departmentIdRaw = asString(raw.departmentId);
+  const employeeIdRaw = asString(raw.employeeId);
+  const department = departmentsById.get(departmentIdRaw);
+  const employee = employeesById.get(employeeIdRaw);
+  if (scope === 'department' && department?.companyId !== companyId) return null;
+  if (scope === 'direct' && employee?.companyId !== companyId) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    scope,
+    departmentId: scope === 'department' ? departmentIdRaw : null,
+    employeeId: scope === 'direct' ? employeeIdRaw : null,
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeChatMessage(raw: unknown, threadIds: Set<string>): ChatMessage | null {
+  if (!isRecord(raw)) return null;
+  const threadId = asString(raw.threadId);
+  if (!threadIds.has(threadId)) return null;
+  const body = asString(raw.body).slice(0, 4000);
+  if (!body) return null;
+  return {
+    id: asString(raw.id) || uid(),
+    threadId,
+    author: asString(raw.author).slice(0, 80),
+    body,
+    createdAt: asNumber(raw.createdAt, Date.now()),
+  };
+}
+
+function normalizeAnnouncement(
+  raw: unknown,
+  companyIds: Set<string>,
+  departmentsById: Map<string, Department>,
+): Announcement | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const title = asString(raw.title).slice(0, 160);
+  const body = asString(raw.body).slice(0, 8000);
+  if (!title || !body) return null;
+  const audience: AnnouncementAudience = ANNOUNCEMENT_AUDIENCES.includes(
+    raw.audience as AnnouncementAudience,
+  )
+    ? (raw.audience as AnnouncementAudience)
+    : 'company';
+  const departmentIdRaw = asString(raw.departmentId);
+  const department = departmentsById.get(departmentIdRaw);
+  const departmentId =
+    audience === 'department' && department?.companyId === companyId ? departmentIdRaw : null;
+  const visibility: AnnouncementVisibility = ANNOUNCEMENT_VISIBILITIES.includes(
+    raw.visibility as AnnouncementVisibility,
+  )
+    ? (raw.visibility as AnnouncementVisibility)
+    : 'team';
+  const priority: AnnouncementPriority = ANNOUNCEMENT_PRIORITIES.includes(
+    raw.priority as AnnouncementPriority,
+  )
+    ? (raw.priority as AnnouncementPriority)
+    : 'normal';
+  const status: AnnouncementStatus = ANNOUNCEMENT_STATUSES.includes(
+    raw.status as AnnouncementStatus,
+  )
+    ? (raw.status as AnnouncementStatus)
+    : 'draft';
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const updatedAt = asNumber(raw.updatedAt, createdAt);
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    departmentId,
+    title,
+    body,
+    audience,
+    visibility,
+    priority,
+    pinned: raw.pinned === true,
+    status,
+    author: asString(raw.author).slice(0, 80),
+    publishedAt:
+      status === 'published' ? asNumber(raw.publishedAt, updatedAt || createdAt) : null,
+    createdAt,
+    updatedAt,
+  };
+}
+
+function normalizeMeeting(
+  raw: unknown,
+  companyIds: Set<string>,
+  departmentsById: Map<string, Department>,
+  employeesById: Map<string, Employee>,
+): Meeting | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const title = asString(raw.title).slice(0, 160);
+  if (!title) return null;
+  const date = asString(raw.date);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const time = asString(raw.time);
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return null;
+  const departmentIdRaw = asString(raw.departmentId);
+  const department = departmentsById.get(departmentIdRaw);
+  const departmentId = department?.companyId === companyId ? departmentIdRaw : null;
+  const attendeeIds = Array.from(
+    new Set(
+      asArray(raw.attendeeIds)
+        .map(asString)
+        .filter((id) => employeesById.get(id)?.companyId === companyId),
+    ),
+  );
+  const status: MeetingStatus = MEETING_STATUSES.includes(raw.status as MeetingStatus)
+    ? (raw.status as MeetingStatus)
+    : 'planned';
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    departmentId,
+    title,
+    agenda: asString(raw.agenda).slice(0, 4000),
+    date,
+    time,
+    durationMin: Math.min(480, Math.max(5, asNumber(raw.durationMin, 30))),
+    location: asString(raw.location).slice(0, 200),
+    attendeeIds,
+    status,
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeNotificationReads(raw: unknown): NotificationRead[] {
+  const seen = new Set<string>();
+  return asArray(raw)
+    .filter(isRecord)
+    .map((item) => ({
+      id: asString(item.id).slice(0, 200),
+      readAt: asNumber(item.readAt, 0),
+    }))
+    .filter((item) => {
+      if (!item.id || !item.readAt || seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    })
+    .sort((a, b) => b.readAt - a.readAt)
+    .slice(0, 500);
+}
+
+function normalizeClient(raw: unknown, companyIds: Set<string>): Client | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const name = asString(raw.name);
+  if (!name) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const nextFollowUp = asString(raw.nextFollowUp);
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    name: name.slice(0, 160),
+    contactName: asString(raw.contactName).slice(0, 120),
+    email: asString(raw.email).slice(0, 160),
+    phone: asString(raw.phone).slice(0, 60),
+    status: CLIENT_STATUSES.includes(raw.status as ClientStatus)
+      ? (raw.status as ClientStatus)
+      : 'lead',
+    value: Math.max(0, asNumber(raw.value, 0)),
+    nextFollowUp: /^\d{4}-\d{2}-\d{2}$/.test(nextFollowUp) ? nextFollowUp : null,
+    note: asString(raw.note).slice(0, 1000),
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeContract(raw: unknown, companyIds: Set<string>): Contract | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const title = asString(raw.title);
+  if (!title) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const startDate = asString(raw.startDate);
+  const endDate = asString(raw.endDate);
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    title: title.slice(0, 200),
+    counterparty: asString(raw.counterparty).slice(0, 160),
+    kind: CONTRACT_KINDS.includes(raw.kind as ContractKind)
+      ? (raw.kind as ContractKind)
+      : 'service',
+    startDate: /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null,
+    endDate: /^\d{4}-\d{2}-\d{2}$/.test(endDate) ? endDate : null,
+    value: Math.max(0, asNumber(raw.value, 0)),
+    status: CONTRACT_STATUSES.includes(raw.status as ContractStatus)
+      ? (raw.status as ContractStatus)
+      : 'active',
+    note: asString(raw.note).slice(0, 2000),
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeDocument(raw: unknown, companyIds: Set<string>): CompanyDocument | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const title = asString(raw.title);
+  if (!title) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    title: title.slice(0, 200),
+    category: DOCUMENT_CATEGORIES.includes(raw.category as DocumentCategory)
+      ? (raw.category as DocumentCategory)
+      : 'other',
+    fileName: asString(raw.fileName).slice(0, 240),
+    mimeType: asString(raw.mimeType).slice(0, 120),
+    size: Math.max(0, asNumber(raw.size, 0)),
+    hasFile: Boolean(raw.hasFile),
+    note: asString(raw.note).slice(0, 2000),
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeBug(raw: unknown, companyIds: Set<string>): BugReport | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const title = asString(raw.title);
+  if (!title) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const status: BugStatus = BUG_STATUSES.includes(raw.status as BugStatus)
+    ? (raw.status as BugStatus)
+    : 'open';
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    projectId: asString(raw.projectId) || null,
+    title: title.slice(0, 200),
+    description: asString(raw.description).slice(0, 4000),
+    severity: BUG_SEVERITIES.includes(raw.severity as BugSeverity)
+      ? (raw.severity as BugSeverity)
+      : 'medium',
+    status,
+    reportedBy: asString(raw.reportedBy).slice(0, 120),
+    assigneeId: asString(raw.assigneeId) || null,
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+    resolvedAt:
+      status === 'resolved' || status === 'closed'
+        ? asNumber(raw.resolvedAt, 0) || null
+        : null,
+  };
+}
+
+function normalizeAutomationRule(
+  raw: unknown,
+  companyIds: Set<string>,
+): AutomationRule | null {
+  if (!isRecord(raw)) return null;
+  const companyId = asString(raw.companyId);
+  if (!companyIds.has(companyId)) return null;
+  const title = asString(raw.title);
+  if (!title) return null;
+  const createdAt = asNumber(raw.createdAt, Date.now());
+  const nextRun = asString(raw.nextRun);
+  return {
+    id: asString(raw.id) || uid(),
+    companyId,
+    title: title.slice(0, 200),
+    priority: TASK_PRIORITIES.includes(raw.priority as TaskPriority)
+      ? (raw.priority as TaskPriority)
+      : 'med',
+    assigneeId: asString(raw.assigneeId) || null,
+    cadence: AUTOMATION_CADENCES.includes(raw.cadence as AutomationCadence)
+      ? (raw.cadence as AutomationCadence)
+      : 'weekly',
+    nextRun: /^\d{4}-\d{2}-\d{2}$/.test(nextRun) ? nextRun : new Date().toISOString().slice(0, 10),
+    enabled: raw.enabled !== false,
+    lastRun: asNumber(raw.lastRun, 0) || null,
+    createdAt,
+    updatedAt: asNumber(raw.updatedAt, createdAt),
+  };
+}
+
+function normalizeSecurityEvents(raw: unknown, companyIds: Set<string>): SecurityEvent[] {
+  return asArray(raw)
+    .filter(isRecord)
+    .map((item) => {
+      const companyId = asString(item.companyId);
+      return {
+        id: asString(item.id).slice(0, 120),
+        at: asNumber(item.at, 0),
+        kind: SECURITY_EVENT_KINDS.includes(item.kind as SecurityEventKind)
+          ? (item.kind as SecurityEventKind)
+          : 'account',
+        actor: asString(item.actor).slice(0, 120),
+        detail: asString(item.detail).slice(0, 600),
+        companyId: companyIds.has(companyId) ? companyId : null,
+      };
+    })
+    .filter((item) => item.id && item.at && item.detail)
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 500);
+}
+
+function nextInvoiceNumber(state: AppData, issueDate: string): string {
+  const prefix = `FTR-${issueDate.slice(0, 4)}-`;
+  let max = 0;
+  for (const invoice of state.invoices) {
+    if (!invoice.number.startsWith(prefix)) continue;
+    const sequence = Number(invoice.number.slice(prefix.length));
+    if (Number.isFinite(sequence)) max = Math.max(max, sequence);
+  }
+  return `${prefix}${String(max + 1).padStart(4, '0')}`;
 }
 
 function normalizeEmployee(raw: unknown, companyIds: Set<string>): Employee | null {
@@ -461,6 +1017,8 @@ function normalizeApproval(raw: unknown, companyIds: Set<string>): Approval | nu
     amount: amount > 0 ? amount : null,
     note: asString(raw.note),
     status,
+    decidedBy: asString(raw.decidedBy).slice(0, 120),
+    decisionNote: asString(raw.decisionNote).slice(0, 1000),
     createdAt,
     decidedAt: status !== 'pending' ? asNumber(raw.decidedAt, createdAt) : null,
   };
@@ -520,6 +1078,21 @@ function emptyState(): AppData {
     tasks: [],
     notes: [],
     finance: [],
+    salaries: [],
+    invoices: [],
+    customerPayments: [],
+    subscriptions: [],
+    chatThreads: [],
+    chatMessages: [],
+    announcements: [],
+    meetings: [],
+    notificationReads: [],
+    clients: [],
+    contracts: [],
+    documents: [],
+    bugs: [],
+    automationRules: [],
+    securityEvents: [],
     employees: [],
     projects: [],
     approvals: [],
@@ -663,6 +1236,78 @@ export function normalizeState(raw: unknown): AppData {
     }
   }
   const employeesById = new Map(employees.map((employee) => [employee.id, employee]));
+  const projects = asArray(source.projects)
+    .map((project) => normalizeProject(project, companyIds))
+    .filter((project): project is Project => Boolean(project));
+  const projectsById = new Map(projects.map((project) => [project.id, project]));
+  const tasks = asArray(source.tasks)
+    .map((task) => normalizeTask(task, companyIds))
+    .filter((task): task is Task => Boolean(task));
+  for (const task of tasks) {
+    if (!task.assigneeId) continue;
+    const assignee = employeesById.get(task.assigneeId);
+    if (!assignee || (task.companyId && assignee.companyId !== task.companyId)) {
+      task.assigneeId = null;
+    }
+  }
+  const salaries = asArray(source.salaries)
+    .map((salary) => normalizeSalary(salary, companyIds, employeesById))
+    .filter((salary): salary is SalaryPayment => Boolean(salary));
+  const invoices = asArray(source.invoices)
+    .map((invoice) => normalizeInvoice(invoice, companyIds))
+    .filter((invoice): invoice is Invoice => Boolean(invoice));
+  const invoicesById = new Map(invoices.map((invoice) => [invoice.id, invoice]));
+  const customerPayments = asArray(source.customerPayments)
+    .map((payment) => normalizeCustomerPayment(payment, companyIds, invoicesById))
+    .filter((payment): payment is CustomerPayment => Boolean(payment));
+  const subscriptions = asArray(source.subscriptions)
+    .map((subscription) => normalizeSubscription(subscription, companyIds))
+    .filter((subscription): subscription is Subscription => Boolean(subscription));
+  const chatThreads = asArray(source.chatThreads)
+    .map((thread) => normalizeChatThread(thread, companyIds, departmentById, employeesById))
+    .filter((thread): thread is ChatThread => Boolean(thread));
+  const chatThreadIds = new Set(chatThreads.map((thread) => thread.id));
+  const chatMessages = asArray(source.chatMessages)
+    .map((message) => normalizeChatMessage(message, chatThreadIds))
+    .filter((message): message is ChatMessage => Boolean(message));
+  const announcements = asArray(source.announcements)
+    .map((announcement) => normalizeAnnouncement(announcement, companyIds, departmentById))
+    .filter((announcement): announcement is Announcement => Boolean(announcement));
+  const meetings = asArray(source.meetings)
+    .map((meeting) => normalizeMeeting(meeting, companyIds, departmentById, employeesById))
+    .filter((meeting): meeting is Meeting => Boolean(meeting));
+  const notificationReads = normalizeNotificationReads(source.notificationReads);
+  const clients = asArray(source.clients)
+    .map((client) => normalizeClient(client, companyIds))
+    .filter((client): client is Client => Boolean(client));
+  const contracts = asArray(source.contracts)
+    .map((contract) => normalizeContract(contract, companyIds))
+    .filter((contract): contract is Contract => Boolean(contract));
+  const documents = asArray(source.documents)
+    .map((document) => normalizeDocument(document, companyIds))
+    .filter((document): document is CompanyDocument => Boolean(document));
+  const bugs = asArray(source.bugs)
+    .map((bug) => normalizeBug(bug, companyIds))
+    .filter((bug): bug is BugReport => Boolean(bug));
+  for (const bug of bugs) {
+    if (bug.projectId) {
+      const project = projectsById.get(bug.projectId);
+      if (!project || project.companyId !== bug.companyId) bug.projectId = null;
+    }
+    if (bug.assigneeId) {
+      const assignee = employeesById.get(bug.assigneeId);
+      if (!assignee || assignee.companyId !== bug.companyId) bug.assigneeId = null;
+    }
+  }
+  const automationRules = asArray(source.automationRules)
+    .map((rule) => normalizeAutomationRule(rule, companyIds))
+    .filter((rule): rule is AutomationRule => Boolean(rule));
+  for (const rule of automationRules) {
+    if (!rule.assigneeId) continue;
+    const assignee = employeesById.get(rule.assigneeId);
+    if (!assignee || assignee.companyId !== rule.companyId) rule.assigneeId = null;
+  }
+  const securityEvents = normalizeSecurityEvents(source.securityEvents, companyIds);
 
   return {
     version: 1,
@@ -673,19 +1318,30 @@ export function normalizeState(raw: unknown): AppData {
     youtubeEvents: [],
     youtubeKey: { hasKey: false, hint: null },
     youtubeKeys: [],
-    tasks: asArray(source.tasks)
-      .map((task) => normalizeTask(task, companyIds))
-      .filter((task): task is Task => Boolean(task)),
+    tasks,
     notes: asArray(source.notes)
       .map((note) => normalizeNote(note, companyIds))
       .filter((note): note is Note => Boolean(note)),
     finance: asArray(source.finance)
       .map((entry) => normalizeFinance(entry, companyIds))
       .filter((entry): entry is FinanceEntry => Boolean(entry)),
+    salaries,
+    invoices,
+    customerPayments,
+    subscriptions,
+    chatThreads,
+    chatMessages,
+    announcements,
+    meetings,
+    notificationReads,
+    clients,
+    contracts,
+    documents,
+    bugs,
+    automationRules,
+    securityEvents,
     employees,
-    projects: asArray(source.projects)
-      .map((project) => normalizeProject(project, companyIds))
-      .filter((project): project is Project => Boolean(project)),
+    projects,
     approvals: asArray(source.approvals)
       .map((approval) => normalizeApproval(approval, companyIds))
       .filter((approval): approval is Approval => Boolean(approval)),
@@ -814,7 +1470,7 @@ function meta(): Meta {
   return {
     appVersion: WEB_VERSION,
     secureStorage: false,
-    dataPath: 'Tarayıcı localStorage',
+    dataPath: 'localStorage',
     platform: 'web',
   };
 }
@@ -876,6 +1532,21 @@ export function importBackup(text: string): {
     'tasks',
     'notes',
     'finance',
+    'salaries',
+    'invoices',
+    'customerPayments',
+    'subscriptions',
+    'chatThreads',
+    'chatMessages',
+    'announcements',
+    'meetings',
+    'notificationReads',
+    'clients',
+    'contracts',
+    'documents',
+    'bugs',
+    'automationRules',
+    'securityEvents',
     'employees',
     'projects',
     'approvals',
@@ -1099,6 +1770,28 @@ export function installBrowserApi(): void {
         state.tasks = state.tasks.filter((task) => task.companyId !== id);
         state.notes = state.notes.filter((note) => note.companyId !== id);
         state.finance = state.finance.filter((entry) => entry.companyId !== id);
+        state.salaries = state.salaries.filter((salary) => salary.companyId !== id);
+        state.invoices = state.invoices.filter((invoice) => invoice.companyId !== id);
+        state.customerPayments = state.customerPayments.filter(
+          (payment) => payment.companyId !== id,
+        );
+        state.subscriptions = state.subscriptions.filter(
+          (subscription) => subscription.companyId !== id,
+        );
+        const threadIds = new Set(
+          state.chatThreads.filter((thread) => thread.companyId === id).map((thread) => thread.id),
+        );
+        state.chatThreads = state.chatThreads.filter((thread) => thread.companyId !== id);
+        state.chatMessages = state.chatMessages.filter((message) => !threadIds.has(message.threadId));
+        state.announcements = state.announcements.filter(
+          (announcement) => announcement.companyId !== id,
+        );
+        state.meetings = state.meetings.filter((meeting) => meeting.companyId !== id);
+        state.clients = state.clients.filter((client) => client.companyId !== id);
+        state.contracts = state.contracts.filter((contract) => contract.companyId !== id);
+        state.documents = state.documents.filter((document) => document.companyId !== id);
+        state.bugs = state.bugs.filter((bug) => bug.companyId !== id);
+        state.automationRules = state.automationRules.filter((rule) => rule.companyId !== id);
         state.employees = state.employees.filter((employee) => employee.companyId !== id);
         state.projects = state.projects.filter((project) => project.companyId !== id);
         state.approvals = state.approvals.filter((approval) => approval.companyId !== id);
@@ -1182,6 +1875,14 @@ export function installBrowserApi(): void {
         const companyId = input.companyId && state.companies.some((c) => c.id === input.companyId)
           ? input.companyId
           : null;
+        const assigneeId =
+          input.assigneeId &&
+          state.employees.some(
+            (employee) =>
+              employee.id === input.assigneeId && (!companyId || employee.companyId === companyId),
+          )
+            ? input.assigneeId
+            : null;
         state.tasks.push({
           id: uid(),
           title,
@@ -1189,6 +1890,7 @@ export function installBrowserApi(): void {
           priority: input.priority ?? 'med',
           due: asString(input.due) || null,
           done: false,
+          assigneeId,
           createdAt: Date.now(),
           completedAt: null,
         });
@@ -1211,6 +1913,17 @@ export function installBrowserApi(): void {
         }
         if (input.priority !== undefined) task.priority = input.priority;
         if (input.due !== undefined) task.due = asString(input.due) || null;
+        if (input.assigneeId !== undefined) {
+          task.assigneeId =
+            input.assigneeId &&
+            state.employees.some(
+              (employee) =>
+                employee.id === input.assigneeId &&
+                (!task.companyId || employee.companyId === task.companyId),
+            )
+              ? input.assigneeId
+              : null;
+        }
         if (input.done !== undefined) {
           const nextDone = Boolean(input.done);
           if (nextDone && !task.done) task.completedAt = Date.now();
@@ -1292,6 +2005,1072 @@ export function installBrowserApi(): void {
         const state = readState();
         if (!state.finance.some((entry) => entry.id === id)) throw new Error('Kayıt bulunamadı.');
         state.finance = state.finance.filter((entry) => entry.id !== id);
+        return writeState(state);
+      },
+    },
+    salary: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const employee = state.employees.find(
+          (item) => item.id === input.employeeId && item.companyId === input.companyId,
+        );
+        if (!employee) throw new Error('Çalışan bulunamadı.');
+        if (!(input.amount > 0)) throw new Error('Sıfırdan büyük bir tutar gir.');
+        const period = asString(input.period);
+        if (!/^\d{4}-\d{2}$/.test(period)) throw new Error('Geçerli bir dönem gir.');
+        const status: SalaryStatus = SALARY_STATUSES.includes(input.status as SalaryStatus)
+          ? (input.status as SalaryStatus)
+          : 'planned';
+        const now = Date.now();
+        state.salaries.push({
+          id: uid(),
+          companyId: input.companyId,
+          employeeId: employee.id,
+          employeeName: employee.name,
+          period,
+          amount: input.amount,
+          status,
+          paidAt: status === 'paid' ? now : null,
+          note: asString(input.note),
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const salary = state.salaries.find((item) => item.id === input.id);
+        if (!salary) throw new Error('Maaş kaydı bulunamadı.');
+        if (input.employeeId !== undefined) {
+          const employee = state.employees.find(
+            (item) => item.id === input.employeeId && item.companyId === salary.companyId,
+          );
+          if (!employee) throw new Error('Çalışan bulunamadı.');
+          salary.employeeId = employee.id;
+          salary.employeeName = employee.name;
+        }
+        if (input.period !== undefined) {
+          const period = asString(input.period);
+          if (!/^\d{4}-\d{2}$/.test(period)) throw new Error('Geçerli bir dönem gir.');
+          salary.period = period;
+        }
+        if (input.amount !== undefined) {
+          if (!(input.amount > 0)) throw new Error('Sıfırdan büyük bir tutar gir.');
+          salary.amount = input.amount;
+        }
+        if (input.status !== undefined && SALARY_STATUSES.includes(input.status)) {
+          salary.status = input.status;
+          salary.paidAt = input.status === 'paid' ? salary.paidAt ?? Date.now() : null;
+        }
+        if (input.note !== undefined) salary.note = asString(input.note);
+        salary.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.salaries.some((salary) => salary.id === id)) {
+          throw new Error('Maaş kaydı bulunamadı.');
+        }
+        state.salaries = state.salaries.filter((salary) => salary.id !== id);
+        return writeState(state);
+      },
+    },
+    invoice: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const customerName = asString(input.customerName);
+        if (!customerName) throw new Error('Müşteri adı gerekli.');
+        if (!(input.amount > 0)) throw new Error('Sıfırdan büyük bir tutar gir.');
+        const taxRate = asNumber(input.taxRate, 0);
+        if (taxRate < 0 || taxRate > 100) {
+          throw new Error('Vergi oranı 0 ile 100 arasında olmalı.');
+        }
+        const issueDate = asString(input.issueDate);
+        const dueDate = asString(input.dueDate);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(issueDate) || !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+          throw new Error('Geçerli bir tarih gir.');
+        }
+        if (dueDate < issueDate) throw new Error('Vade tarihi düzenleme tarihinden önce olamaz.');
+        const status: InvoiceStatus = INVOICE_STATUSES.includes(input.status as InvoiceStatus)
+          ? (input.status as InvoiceStatus)
+          : 'sent';
+        const now = Date.now();
+        state.invoices.push({
+          id: uid(),
+          companyId: input.companyId,
+          number: nextInvoiceNumber(state, issueDate),
+          customerName,
+          customerEmail: asString(input.customerEmail),
+          amount: input.amount,
+          taxRate,
+          issueDate,
+          dueDate,
+          status,
+          note: asString(input.note),
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const invoice = state.invoices.find((item) => item.id === input.id);
+        if (!invoice) throw new Error('Fatura bulunamadı.');
+        if (input.companyId !== undefined && input.companyId !== invoice.companyId) {
+          findCompany(state, input.companyId);
+          invoice.companyId = input.companyId;
+          for (const payment of state.customerPayments) {
+            if (payment.invoiceId === invoice.id) payment.companyId = input.companyId;
+          }
+        }
+        if (input.customerName !== undefined) {
+          const customerName = asString(input.customerName);
+          if (!customerName) throw new Error('Müşteri adı gerekli.');
+          invoice.customerName = customerName;
+        }
+        if (input.customerEmail !== undefined) {
+          invoice.customerEmail = asString(input.customerEmail);
+        }
+        if (input.amount !== undefined) {
+          if (!(input.amount > 0)) throw new Error('Sıfırdan büyük bir tutar gir.');
+          invoice.amount = input.amount;
+        }
+        if (input.taxRate !== undefined) {
+          const taxRate = asNumber(input.taxRate, invoice.taxRate);
+          if (taxRate < 0 || taxRate > 100) {
+            throw new Error('Vergi oranı 0 ile 100 arasında olmalı.');
+          }
+          invoice.taxRate = taxRate;
+        }
+        if (input.issueDate !== undefined) {
+          const issueDate = asString(input.issueDate);
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(issueDate)) throw new Error('Geçerli bir tarih gir.');
+          invoice.issueDate = issueDate;
+        }
+        if (input.dueDate !== undefined) {
+          const dueDate = asString(input.dueDate);
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) throw new Error('Geçerli bir tarih gir.');
+          invoice.dueDate = dueDate;
+        }
+        if (invoice.dueDate < invoice.issueDate) {
+          throw new Error('Vade tarihi düzenleme tarihinden önce olamaz.');
+        }
+        if (input.status !== undefined && INVOICE_STATUSES.includes(input.status)) {
+          invoice.status = input.status;
+        }
+        if (input.note !== undefined) invoice.note = asString(input.note);
+        invoice.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.invoices.some((invoice) => invoice.id === id)) {
+          throw new Error('Fatura bulunamadı.');
+        }
+        state.invoices = state.invoices.filter((invoice) => invoice.id !== id);
+        state.customerPayments = state.customerPayments.map((payment) =>
+          payment.invoiceId === id ? { ...payment, invoiceId: null, updatedAt: Date.now() } : payment,
+        );
+        return writeState(state);
+      },
+    },
+    customerPayment: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        if (!(input.amount > 0)) throw new Error('Sıfırdan büyük bir tutar gir.');
+        const date = asString(input.date);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Geçerli bir tarih gir.');
+        const invoiceIdRaw = asString(input.invoiceId);
+        const invoice = invoiceIdRaw
+          ? state.invoices.find(
+              (item) => item.id === invoiceIdRaw && item.companyId === input.companyId,
+            )
+          : undefined;
+        if (invoiceIdRaw && !invoice) throw new Error('Fatura bulunamadı.');
+        const customerName = asString(input.customerName) || invoice?.customerName || '';
+        if (!customerName) throw new Error('Müşteri adı gerekli.');
+        const method: PaymentMethod = PAYMENT_METHODS.includes(input.method as PaymentMethod)
+          ? (input.method as PaymentMethod)
+          : 'transfer';
+        const status: CustomerPaymentStatus = PAYMENT_STATUSES.includes(
+          input.status as CustomerPaymentStatus,
+        )
+          ? (input.status as CustomerPaymentStatus)
+          : 'received';
+        const now = Date.now();
+        state.customerPayments.push({
+          id: uid(),
+          companyId: input.companyId,
+          customerName,
+          invoiceId: invoice?.id ?? null,
+          amount: input.amount,
+          method,
+          status,
+          date,
+          note: asString(input.note),
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const payment = state.customerPayments.find((item) => item.id === input.id);
+        if (!payment) throw new Error('Ödeme kaydı bulunamadı.');
+        if (input.invoiceId !== undefined) {
+          const invoiceIdRaw = asString(input.invoiceId);
+          const invoice = invoiceIdRaw
+            ? state.invoices.find(
+                (item) => item.id === invoiceIdRaw && item.companyId === payment.companyId,
+              )
+            : undefined;
+          if (invoiceIdRaw && !invoice) throw new Error('Fatura bulunamadı.');
+          payment.invoiceId = invoice?.id ?? null;
+          if (!payment.customerName && invoice) payment.customerName = invoice.customerName;
+        }
+        if (input.customerName !== undefined) {
+          const customerName = asString(input.customerName);
+          if (!customerName) throw new Error('Müşteri adı gerekli.');
+          payment.customerName = customerName;
+        }
+        if (input.amount !== undefined) {
+          if (!(input.amount > 0)) throw new Error('Sıfırdan büyük bir tutar gir.');
+          payment.amount = input.amount;
+        }
+        if (input.method !== undefined && PAYMENT_METHODS.includes(input.method)) {
+          payment.method = input.method;
+        }
+        if (input.status !== undefined && PAYMENT_STATUSES.includes(input.status)) {
+          payment.status = input.status;
+        }
+        if (input.date !== undefined) {
+          const date = asString(input.date);
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Geçerli bir tarih gir.');
+          payment.date = date;
+        }
+        if (input.note !== undefined) payment.note = asString(input.note);
+        payment.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.customerPayments.some((payment) => payment.id === id)) {
+          throw new Error('Ödeme kaydı bulunamadı.');
+        }
+        state.customerPayments = state.customerPayments.filter((payment) => payment.id !== id);
+        return writeState(state);
+      },
+    },
+    subscription: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const name = asString(input.name);
+        if (!name) throw new Error('Abonelik adı gerekli.');
+        if (!(asNumber(input.amount, 0) >= 0)) {
+          throw new Error('Geçerli bir tutar gir.');
+        }
+        const nextRenewal = asString(input.nextRenewal);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(nextRenewal)) {
+          throw new Error('Geçerli bir yenileme tarihi gir.');
+        }
+        const kind: SubscriptionKind = SUBSCRIPTION_KINDS.includes(input.kind as SubscriptionKind)
+          ? (input.kind as SubscriptionKind)
+          : 'subscription';
+        const cycle: BillingCycle = BILLING_CYCLES.includes(input.cycle as BillingCycle)
+          ? (input.cycle as BillingCycle)
+          : 'monthly';
+        const status: SubscriptionStatus = SUBSCRIPTION_STATUSES.includes(
+          input.status as SubscriptionStatus,
+        )
+          ? (input.status as SubscriptionStatus)
+          : 'active';
+        const now = Date.now();
+        state.subscriptions.push({
+          id: uid(),
+          companyId: input.companyId,
+          name,
+          vendor: asString(input.vendor),
+          kind,
+          amount: asNumber(input.amount, 0),
+          cycle,
+          nextRenewal,
+          status,
+          note: asString(input.note),
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const subscription = state.subscriptions.find((item) => item.id === input.id);
+        if (!subscription) throw new Error('Abonelik bulunamadı.');
+        if (input.companyId !== undefined) {
+          findCompany(state, input.companyId);
+          subscription.companyId = input.companyId;
+        }
+        if (input.name !== undefined) {
+          const name = asString(input.name);
+          if (!name) throw new Error('Abonelik adı gerekli.');
+          subscription.name = name;
+        }
+        if (input.vendor !== undefined) subscription.vendor = asString(input.vendor);
+        if (input.kind !== undefined && SUBSCRIPTION_KINDS.includes(input.kind)) {
+          subscription.kind = input.kind;
+        }
+        if (input.amount !== undefined) {
+          if (!(input.amount >= 0)) throw new Error('Geçerli bir tutar gir.');
+          subscription.amount = input.amount;
+        }
+        if (input.cycle !== undefined && BILLING_CYCLES.includes(input.cycle)) {
+          subscription.cycle = input.cycle;
+        }
+        if (input.nextRenewal !== undefined) {
+          const nextRenewal = asString(input.nextRenewal);
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(nextRenewal)) {
+            throw new Error('Geçerli bir yenileme tarihi gir.');
+          }
+          subscription.nextRenewal = nextRenewal;
+        }
+        if (input.status !== undefined && SUBSCRIPTION_STATUSES.includes(input.status)) {
+          subscription.status = input.status;
+        }
+        if (input.note !== undefined) subscription.note = asString(input.note);
+        subscription.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.subscriptions.some((subscription) => subscription.id === id)) {
+          throw new Error('Abonelik bulunamadı.');
+        }
+        state.subscriptions = state.subscriptions.filter(
+          (subscription) => subscription.id !== id,
+        );
+        return writeState(state);
+      },
+    },
+    chat: {
+      createThread: async (input) => {
+        const state = readState();
+        const company = findCompany(state, input.companyId);
+        if (!CHAT_SCOPES.includes(input.scope)) throw new Error('Bilinmeyen sohbet türü.');
+        const departmentId =
+          input.scope === 'department' ? asString(input.departmentId) : '';
+        const employeeId = input.scope === 'direct' ? asString(input.employeeId) : '';
+        if (input.scope === 'department') {
+          const department = state.departments.find((item) => item.id === departmentId);
+          if (!department || department.companyId !== company.id) {
+            throw new Error('Departman bulunamadı.');
+          }
+        }
+        if (input.scope === 'direct') {
+          const employee = state.employees.find((item) => item.id === employeeId);
+          if (!employee || employee.companyId !== company.id) {
+            throw new Error('Çalışan bulunamadı.');
+          }
+        }
+        const duplicate = state.chatThreads.some(
+          (thread) =>
+            thread.companyId === company.id &&
+            thread.scope === input.scope &&
+            (input.scope !== 'department' || thread.departmentId === departmentId) &&
+            (input.scope !== 'direct' || thread.employeeId === employeeId),
+        );
+        if (duplicate) throw new Error('Bu sohbet zaten açık.');
+        const now = Date.now();
+        state.chatThreads.push({
+          id: uid(),
+          companyId: company.id,
+          scope: input.scope,
+          departmentId: input.scope === 'department' ? departmentId : null,
+          employeeId: input.scope === 'direct' ? employeeId : null,
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      removeThread: async (id) => {
+        const state = readState();
+        if (!state.chatThreads.some((thread) => thread.id === id)) {
+          throw new Error('Sohbet bulunamadı.');
+        }
+        state.chatThreads = state.chatThreads.filter((thread) => thread.id !== id);
+        state.chatMessages = state.chatMessages.filter((message) => message.threadId !== id);
+        return writeState(state);
+      },
+      sendMessage: async (input) => {
+        const state = readState();
+        const thread = state.chatThreads.find((item) => item.id === input.threadId);
+        if (!thread) throw new Error('Sohbet bulunamadı.');
+        const body = asString(input.body).slice(0, 4000);
+        if (!body) throw new Error('Mesaj boş olamaz.');
+        const now = Date.now();
+        state.chatMessages.push({
+          id: uid(),
+          threadId: thread.id,
+          author: asString(input.author).slice(0, 80),
+          body,
+          createdAt: now,
+        });
+        thread.updatedAt = now;
+        return writeState(state);
+      },
+      removeMessage: async (id) => {
+        const state = readState();
+        if (!state.chatMessages.some((message) => message.id === id)) {
+          throw new Error('Mesaj bulunamadı.');
+        }
+        state.chatMessages = state.chatMessages.filter((message) => message.id !== id);
+        return writeState(state);
+      },
+    },
+    announcement: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const title = asString(input.title).slice(0, 160);
+        const body = asString(input.body).slice(0, 8000);
+        if (!title) throw new Error('Duyuru başlığı gerekli.');
+        if (!body) throw new Error('Duyuru metni gerekli.');
+        const audience: AnnouncementAudience = ANNOUNCEMENT_AUDIENCES.includes(
+          input.audience as AnnouncementAudience,
+        )
+          ? (input.audience as AnnouncementAudience)
+          : 'company';
+        const departmentId = asString(input.departmentId);
+        if (audience === 'department') {
+          const department = state.departments.find((item) => item.id === departmentId);
+          if (!department || department.companyId !== input.companyId) {
+            throw new Error('Departman bulunamadı.');
+          }
+        }
+        const visibility: AnnouncementVisibility = ANNOUNCEMENT_VISIBILITIES.includes(
+          input.visibility as AnnouncementVisibility,
+        )
+          ? (input.visibility as AnnouncementVisibility)
+          : 'team';
+        const priority: AnnouncementPriority = ANNOUNCEMENT_PRIORITIES.includes(
+          input.priority as AnnouncementPriority,
+        )
+          ? (input.priority as AnnouncementPriority)
+          : 'normal';
+        const status: AnnouncementStatus = ANNOUNCEMENT_STATUSES.includes(
+          input.status as AnnouncementStatus,
+        )
+          ? (input.status as AnnouncementStatus)
+          : 'draft';
+        const now = Date.now();
+        state.announcements.push({
+          id: uid(),
+          companyId: input.companyId,
+          departmentId: audience === 'department' ? departmentId : null,
+          title,
+          body,
+          audience,
+          visibility,
+          priority,
+          pinned: input.pinned === true,
+          status,
+          author: asString(input.author).slice(0, 80),
+          publishedAt: status === 'published' ? now : null,
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const announcement = state.announcements.find((item) => item.id === input.id);
+        if (!announcement) throw new Error('Duyuru bulunamadı.');
+        if (input.companyId !== undefined) {
+          findCompany(state, input.companyId);
+          announcement.companyId = input.companyId;
+        }
+        if (input.title !== undefined) {
+          const title = asString(input.title).slice(0, 160);
+          if (!title) throw new Error('Duyuru başlığı gerekli.');
+          announcement.title = title;
+        }
+        if (input.body !== undefined) {
+          const body = asString(input.body).slice(0, 8000);
+          if (!body) throw new Error('Duyuru metni gerekli.');
+          announcement.body = body;
+        }
+        if (input.audience !== undefined && ANNOUNCEMENT_AUDIENCES.includes(input.audience)) {
+          announcement.audience = input.audience;
+        }
+        if (input.departmentId !== undefined) {
+          const departmentId = asString(input.departmentId);
+          if (departmentId) {
+            const department = state.departments.find((item) => item.id === departmentId);
+            if (!department || department.companyId !== announcement.companyId) {
+              throw new Error('Departman bulunamadı.');
+            }
+            announcement.departmentId = departmentId;
+          } else {
+            announcement.departmentId = null;
+          }
+        }
+        if (
+          announcement.audience === 'department' &&
+          !state.departments.some(
+            (item) =>
+              item.id === announcement.departmentId &&
+              item.companyId === announcement.companyId,
+          )
+        ) {
+          throw new Error('Departman bulunamadı.');
+        }
+        if (
+          input.visibility !== undefined &&
+          ANNOUNCEMENT_VISIBILITIES.includes(input.visibility)
+        ) {
+          announcement.visibility = input.visibility;
+        }
+        if (input.priority !== undefined && ANNOUNCEMENT_PRIORITIES.includes(input.priority)) {
+          announcement.priority = input.priority;
+        }
+        if (input.pinned !== undefined) announcement.pinned = input.pinned === true;
+        if (input.status !== undefined && ANNOUNCEMENT_STATUSES.includes(input.status)) {
+          if (input.status === 'published' && announcement.status !== 'published') {
+            announcement.publishedAt = Date.now();
+          }
+          if (input.status !== 'published') announcement.publishedAt = null;
+          announcement.status = input.status;
+        }
+        if (input.author !== undefined) announcement.author = asString(input.author).slice(0, 80);
+        announcement.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.announcements.some((announcement) => announcement.id === id)) {
+          throw new Error('Duyuru bulunamadı.');
+        }
+        state.announcements = state.announcements.filter(
+          (announcement) => announcement.id !== id,
+        );
+        return writeState(state);
+      },
+    },
+    meeting: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const title = asString(input.title).slice(0, 160);
+        if (!title) throw new Error('Toplantı başlığı gerekli.');
+        const date = asString(input.date);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Geçerli bir tarih gir.');
+        const time = asString(input.time);
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+          throw new Error('Geçerli bir saat gir.');
+        }
+        const departmentId = asString(input.departmentId);
+        if (departmentId) {
+          const department = state.departments.find((item) => item.id === departmentId);
+          if (!department || department.companyId !== input.companyId) {
+            throw new Error('Departman bulunamadı.');
+          }
+        }
+        const attendeeIds = Array.from(
+          new Set(
+            (input.attendeeIds ?? []).filter((employeeId) =>
+              state.employees.some(
+                (employee) =>
+                  employee.id === employeeId && employee.companyId === input.companyId,
+              ),
+            ),
+          ),
+        );
+        const status: MeetingStatus = MEETING_STATUSES.includes(input.status as MeetingStatus)
+          ? (input.status as MeetingStatus)
+          : 'planned';
+        const now = Date.now();
+        state.meetings.push({
+          id: uid(),
+          companyId: input.companyId,
+          departmentId: departmentId || null,
+          title,
+          agenda: asString(input.agenda).slice(0, 4000),
+          date,
+          time,
+          durationMin: Math.min(480, Math.max(5, asNumber(input.durationMin, 30))),
+          location: asString(input.location).slice(0, 200),
+          attendeeIds,
+          status,
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const meeting = state.meetings.find((item) => item.id === input.id);
+        if (!meeting) throw new Error('Toplantı bulunamadı.');
+        if (input.companyId !== undefined) {
+          findCompany(state, input.companyId);
+          meeting.companyId = input.companyId;
+          meeting.attendeeIds = meeting.attendeeIds.filter((employeeId) =>
+            state.employees.some(
+              (employee) => employee.id === employeeId && employee.companyId === meeting.companyId,
+            ),
+          );
+        }
+        if (input.title !== undefined) {
+          const title = asString(input.title).slice(0, 160);
+          if (!title) throw new Error('Toplantı başlığı gerekli.');
+          meeting.title = title;
+        }
+        if (input.agenda !== undefined) meeting.agenda = asString(input.agenda).slice(0, 4000);
+        if (input.date !== undefined) {
+          const date = asString(input.date);
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Geçerli bir tarih gir.');
+          meeting.date = date;
+        }
+        if (input.time !== undefined) {
+          const time = asString(input.time);
+          if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+            throw new Error('Geçerli bir saat gir.');
+          }
+          meeting.time = time;
+        }
+        if (input.durationMin !== undefined) {
+          meeting.durationMin = Math.min(480, Math.max(5, asNumber(input.durationMin, 30)));
+        }
+        if (input.location !== undefined) meeting.location = asString(input.location).slice(0, 200);
+        if (input.departmentId !== undefined) {
+          const departmentId = asString(input.departmentId);
+          if (departmentId) {
+            const department = state.departments.find((item) => item.id === departmentId);
+            if (!department || department.companyId !== meeting.companyId) {
+              throw new Error('Departman bulunamadı.');
+            }
+            meeting.departmentId = departmentId;
+          } else {
+            meeting.departmentId = null;
+          }
+        }
+        if (input.attendeeIds !== undefined) {
+          const ids = new Set(input.attendeeIds);
+          meeting.attendeeIds = Array.from(
+            new Set(
+              state.employees
+                .filter((employee) => employee.companyId === meeting.companyId && ids.has(employee.id))
+                .map((employee) => employee.id),
+            ),
+          );
+        }
+        if (input.status !== undefined && MEETING_STATUSES.includes(input.status)) {
+          meeting.status = input.status;
+        }
+        meeting.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.meetings.some((meeting) => meeting.id === id)) {
+          throw new Error('Toplantı bulunamadı.');
+        }
+        state.meetings = state.meetings.filter((meeting) => meeting.id !== id);
+        return writeState(state);
+      },
+    },
+    notification: {
+      markRead: async (ids) => {
+        const state = readState();
+        const targets = new Set(asArray(ids).map(asString).filter(Boolean));
+        if (!targets.size) return state;
+        const read = new Map(state.notificationReads.map((item) => [item.id, item.readAt]));
+        const now = Date.now();
+        for (const id of targets) read.set(id, now);
+        state.notificationReads = Array.from(read, ([id, readAt]) => ({ id, readAt }))
+          .sort((a, b) => b.readAt - a.readAt)
+          .slice(0, 500);
+        return writeState(state);
+      },
+    },
+    client: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const name = asString(input.name);
+        if (!name) throw new Error('Müşteri adı gerekli.');
+        const now = Date.now();
+        const nextFollowUp = asString(input.nextFollowUp);
+        state.clients.push({
+          id: uid(),
+          companyId: input.companyId,
+          name: name.slice(0, 160),
+          contactName: asString(input.contactName).slice(0, 120),
+          email: asString(input.email).slice(0, 160),
+          phone: asString(input.phone).slice(0, 60),
+          status: CLIENT_STATUSES.includes(input.status as ClientStatus)
+            ? (input.status as ClientStatus)
+            : 'lead',
+          value: Math.max(0, asNumber(input.value, 0)),
+          nextFollowUp: /^\d{4}-\d{2}-\d{2}$/.test(nextFollowUp) ? nextFollowUp : null,
+          note: asString(input.note).slice(0, 1000),
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const client = state.clients.find((item) => item.id === input.id);
+        if (!client) throw new Error('Müşteri bulunamadı.');
+        if (input.companyId !== undefined && input.companyId !== client.companyId) {
+          findCompany(state, input.companyId);
+          client.companyId = input.companyId;
+        }
+        if (input.name !== undefined) {
+          const name = asString(input.name);
+          if (!name) throw new Error('Müşteri adı gerekli.');
+          client.name = name.slice(0, 160);
+        }
+        if (input.contactName !== undefined) client.contactName = asString(input.contactName).slice(0, 120);
+        if (input.email !== undefined) client.email = asString(input.email).slice(0, 160);
+        if (input.phone !== undefined) client.phone = asString(input.phone).slice(0, 60);
+        if (input.status !== undefined && CLIENT_STATUSES.includes(input.status)) {
+          client.status = input.status;
+        }
+        if (input.value !== undefined) client.value = Math.max(0, asNumber(input.value, 0));
+        if (input.nextFollowUp !== undefined) {
+          const nextFollowUp = asString(input.nextFollowUp);
+          client.nextFollowUp = /^\d{4}-\d{2}-\d{2}$/.test(nextFollowUp) ? nextFollowUp : null;
+        }
+        if (input.note !== undefined) client.note = asString(input.note).slice(0, 1000);
+        client.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.clients.some((client) => client.id === id)) {
+          throw new Error('Müşteri bulunamadı.');
+        }
+        state.clients = state.clients.filter((client) => client.id !== id);
+        return writeState(state);
+      },
+    },
+    contract: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const title = asString(input.title);
+        if (!title) throw new Error('Sözleşme başlığı gerekli.');
+        const now = Date.now();
+        const startDate = asString(input.startDate);
+        const endDate = asString(input.endDate);
+        state.contracts.push({
+          id: uid(),
+          companyId: input.companyId,
+          title: title.slice(0, 200),
+          counterparty: asString(input.counterparty).slice(0, 160),
+          kind: CONTRACT_KINDS.includes(input.kind as ContractKind)
+            ? (input.kind as ContractKind)
+            : 'service',
+          startDate: /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null,
+          endDate: /^\d{4}-\d{2}-\d{2}$/.test(endDate) ? endDate : null,
+          value: Math.max(0, asNumber(input.value, 0)),
+          status: CONTRACT_STATUSES.includes(input.status as ContractStatus)
+            ? (input.status as ContractStatus)
+            : 'active',
+          note: asString(input.note).slice(0, 2000),
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const contract = state.contracts.find((item) => item.id === input.id);
+        if (!contract) throw new Error('Sözleşme bulunamadı.');
+        if (input.companyId !== undefined && input.companyId !== contract.companyId) {
+          findCompany(state, input.companyId);
+          contract.companyId = input.companyId;
+        }
+        if (input.title !== undefined) {
+          const title = asString(input.title);
+          if (!title) throw new Error('Sözleşme başlığı gerekli.');
+          contract.title = title.slice(0, 200);
+        }
+        if (input.counterparty !== undefined) {
+          contract.counterparty = asString(input.counterparty).slice(0, 160);
+        }
+        if (input.kind !== undefined && CONTRACT_KINDS.includes(input.kind)) {
+          contract.kind = input.kind;
+        }
+        if (input.startDate !== undefined) {
+          const date = asString(input.startDate);
+          contract.startDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
+        }
+        if (input.endDate !== undefined) {
+          const date = asString(input.endDate);
+          contract.endDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
+        }
+        if (input.value !== undefined) contract.value = Math.max(0, asNumber(input.value, 0));
+        if (input.status !== undefined && CONTRACT_STATUSES.includes(input.status)) {
+          contract.status = input.status;
+        }
+        if (input.note !== undefined) contract.note = asString(input.note).slice(0, 2000);
+        contract.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.contracts.some((contract) => contract.id === id)) {
+          throw new Error('Sözleşme bulunamadı.');
+        }
+        state.contracts = state.contracts.filter((contract) => contract.id !== id);
+        return writeState(state);
+      },
+    },
+    document: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const title = asString(input.title);
+        if (!title) throw new Error('Belge başlığı gerekli.');
+        const now = Date.now();
+        state.documents.push({
+          id: asString(input.id) || uid(),
+          companyId: input.companyId,
+          title: title.slice(0, 200),
+          category: DOCUMENT_CATEGORIES.includes(input.category as DocumentCategory)
+            ? (input.category as DocumentCategory)
+            : 'other',
+          fileName: asString(input.fileName).slice(0, 240),
+          mimeType: asString(input.mimeType).slice(0, 120),
+          size: Math.max(0, asNumber(input.size, 0)),
+          hasFile: Boolean(input.hasFile),
+          note: asString(input.note).slice(0, 2000),
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const document = state.documents.find((item) => item.id === input.id);
+        if (!document) throw new Error('Belge bulunamadı.');
+        if (input.companyId !== undefined && input.companyId !== document.companyId) {
+          findCompany(state, input.companyId);
+          document.companyId = input.companyId;
+        }
+        if (input.title !== undefined) {
+          const title = asString(input.title);
+          if (!title) throw new Error('Belge başlığı gerekli.');
+          document.title = title.slice(0, 200);
+        }
+        if (input.category !== undefined && DOCUMENT_CATEGORIES.includes(input.category)) {
+          document.category = input.category;
+        }
+        if (input.fileName !== undefined) document.fileName = asString(input.fileName).slice(0, 240);
+        if (input.mimeType !== undefined) document.mimeType = asString(input.mimeType).slice(0, 120);
+        if (input.size !== undefined) document.size = Math.max(0, asNumber(input.size, 0));
+        if (input.hasFile !== undefined) document.hasFile = Boolean(input.hasFile);
+        if (input.note !== undefined) document.note = asString(input.note).slice(0, 2000);
+        document.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.documents.some((document) => document.id === id)) {
+          throw new Error('Belge bulunamadı.');
+        }
+        state.documents = state.documents.filter((document) => document.id !== id);
+        return writeState(state);
+      },
+    },
+    bug: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const title = asString(input.title);
+        if (!title) throw new Error('Hata başlığı gerekli.');
+        const now = Date.now();
+        const status: BugStatus = BUG_STATUSES.includes(input.status as BugStatus)
+          ? (input.status as BugStatus)
+          : 'open';
+        state.bugs.push({
+          id: uid(),
+          companyId: input.companyId,
+          projectId: asString(input.projectId) || null,
+          title: title.slice(0, 200),
+          description: asString(input.description).slice(0, 4000),
+          severity: BUG_SEVERITIES.includes(input.severity as BugSeverity)
+            ? (input.severity as BugSeverity)
+            : 'medium',
+          status,
+          reportedBy: asString(input.reportedBy).slice(0, 120),
+          assigneeId: asString(input.assigneeId) || null,
+          createdAt: now,
+          updatedAt: now,
+          resolvedAt: status === 'resolved' || status === 'closed' ? now : null,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const bug = state.bugs.find((item) => item.id === input.id);
+        if (!bug) throw new Error('Hata kaydı bulunamadı.');
+        if (input.companyId !== undefined && input.companyId !== bug.companyId) {
+          findCompany(state, input.companyId);
+          bug.companyId = input.companyId;
+        }
+        if (input.projectId !== undefined) bug.projectId = asString(input.projectId) || null;
+        if (input.title !== undefined) {
+          const title = asString(input.title);
+          if (!title) throw new Error('Hata başlığı gerekli.');
+          bug.title = title.slice(0, 200);
+        }
+        if (input.description !== undefined) {
+          bug.description = asString(input.description).slice(0, 4000);
+        }
+        if (input.severity !== undefined && BUG_SEVERITIES.includes(input.severity)) {
+          bug.severity = input.severity;
+        }
+        if (input.status !== undefined && BUG_STATUSES.includes(input.status)) {
+          bug.status = input.status;
+          bug.resolvedAt =
+            input.status === 'resolved' || input.status === 'closed'
+              ? bug.resolvedAt ?? Date.now()
+              : null;
+        }
+        if (input.reportedBy !== undefined) bug.reportedBy = asString(input.reportedBy).slice(0, 120);
+        if (input.assigneeId !== undefined) bug.assigneeId = asString(input.assigneeId) || null;
+        bug.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.bugs.some((bug) => bug.id === id)) throw new Error('Hata kaydı bulunamadı.');
+        state.bugs = state.bugs.filter((bug) => bug.id !== id);
+        return writeState(state);
+      },
+    },
+    automation: {
+      create: async (input) => {
+        const state = readState();
+        findCompany(state, input.companyId);
+        const title = asString(input.title);
+        if (!title) throw new Error('Kural başlığı gerekli.');
+        const now = Date.now();
+        const nextRun = asString(input.nextRun);
+        state.automationRules.push({
+          id: uid(),
+          companyId: input.companyId,
+          title: title.slice(0, 200),
+          priority: TASK_PRIORITIES.includes(input.priority as TaskPriority)
+            ? (input.priority as TaskPriority)
+            : 'med',
+          assigneeId: asString(input.assigneeId) || null,
+          cadence: AUTOMATION_CADENCES.includes(input.cadence as AutomationCadence)
+            ? (input.cadence as AutomationCadence)
+            : 'weekly',
+          nextRun: /^\d{4}-\d{2}-\d{2}$/.test(nextRun)
+            ? nextRun
+            : new Date().toISOString().slice(0, 10),
+          enabled: input.enabled !== false,
+          lastRun: null,
+          createdAt: now,
+          updatedAt: now,
+        });
+        return writeState(state);
+      },
+      update: async (input) => {
+        const state = readState();
+        const rule = state.automationRules.find((item) => item.id === input.id);
+        if (!rule) throw new Error('Kural bulunamadı.');
+        if (input.companyId !== undefined && input.companyId !== rule.companyId) {
+          findCompany(state, input.companyId);
+          rule.companyId = input.companyId;
+        }
+        if (input.title !== undefined) {
+          const title = asString(input.title);
+          if (!title) throw new Error('Kural başlığı gerekli.');
+          rule.title = title.slice(0, 200);
+        }
+        if (input.priority !== undefined && TASK_PRIORITIES.includes(input.priority)) {
+          rule.priority = input.priority;
+        }
+        if (input.assigneeId !== undefined) rule.assigneeId = asString(input.assigneeId) || null;
+        if (input.cadence !== undefined && AUTOMATION_CADENCES.includes(input.cadence)) {
+          rule.cadence = input.cadence;
+        }
+        if (input.nextRun !== undefined) {
+          const nextRun = asString(input.nextRun);
+          if (/^\d{4}-\d{2}-\d{2}$/.test(nextRun)) rule.nextRun = nextRun;
+        }
+        if (input.enabled !== undefined) rule.enabled = Boolean(input.enabled);
+        rule.updatedAt = Date.now();
+        return writeState(state);
+      },
+      remove: async (id) => {
+        const state = readState();
+        if (!state.automationRules.some((rule) => rule.id === id)) {
+          throw new Error('Kural bulunamadı.');
+        }
+        state.automationRules = state.automationRules.filter((rule) => rule.id !== id);
+        return writeState(state);
+      },
+      run: async (id) => {
+        const state = readState();
+        const rule = state.automationRules.find((item) => item.id === id);
+        if (!rule) throw new Error('Kural bulunamadı.');
+        if (!rule.enabled) throw new Error('Kural pasif durumda.');
+        const now = Date.now();
+        const assignee = rule.assigneeId
+          ? state.employees.find(
+              (employee) =>
+                employee.id === rule.assigneeId && employee.companyId === rule.companyId,
+            )
+          : null;
+        state.tasks.push({
+          id: uid(),
+          title: rule.title,
+          companyId: rule.companyId,
+          priority: rule.priority,
+          due: rule.nextRun,
+          done: false,
+          assigneeId: assignee ? assignee.id : null,
+          createdAt: now,
+          completedAt: null,
+        });
+        rule.lastRun = now;
+        const next = new Date(`${rule.nextRun}T12:00:00`);
+        if (rule.cadence === 'daily') next.setDate(next.getDate() + 1);
+        else if (rule.cadence === 'monthly') next.setMonth(next.getMonth() + 1);
+        else next.setDate(next.getDate() + 7);
+        rule.nextRun = next.toISOString().slice(0, 10);
+        rule.updatedAt = now;
+        return writeState(state);
+      },
+    },
+    security: {
+      log: async (input) => {
+        const state = readState();
+        const detail = asString(input.detail).trim();
+        if (!detail) throw new Error('Kayıt ayrıntısı gerekli.');
+        state.securityEvents.unshift({
+          id: uid(),
+          at: Date.now(),
+          kind: SECURITY_EVENT_KINDS.includes(input.kind) ? input.kind : 'account',
+          actor: asString(input.actor).slice(0, 120) || tGlobal('Yerel yönetici'),
+          detail: detail.slice(0, 600),
+          companyId: asString(input.companyId) || null,
+        });
+        state.securityEvents = state.securityEvents.slice(0, 500);
+        return writeState(state);
+      },
+      clear: async () => {
+        const state = readState();
+        state.securityEvents = [];
         return writeState(state);
       },
     },
@@ -1392,12 +3171,50 @@ export function installBrowserApi(): void {
       },
       remove: async (id) => {
         const state = readState();
-        if (!state.employees.some((employee) => employee.id === id)) {
-          throw new Error('Çalışan bulunamadı.');
-        }
-        state.employees = state.employees.filter((employee) => employee.id !== id);
+        const employee = state.employees.find((item) => item.id === id);
+        if (!employee) throw new Error('Çalışan bulunamadı.');
+        state.employees = state.employees.filter((item) => item.id !== id);
         state.performanceReviews = state.performanceReviews.filter(
           (review) => review.employeeId !== id,
+        );
+        const directThreadIds = new Set(
+          state.chatThreads
+            .filter((thread) => thread.employeeId === id)
+            .map((thread) => thread.id),
+        );
+        if (directThreadIds.size) {
+          state.chatThreads = state.chatThreads.filter((thread) => !directThreadIds.has(thread.id));
+          state.chatMessages = state.chatMessages.filter(
+            (message) => !directThreadIds.has(message.threadId),
+          );
+        }
+        state.meetings = state.meetings.map((meeting) =>
+          meeting.attendeeIds.includes(id)
+            ? {
+                ...meeting,
+                attendeeIds: meeting.attendeeIds.filter((attendeeId) => attendeeId !== id),
+                updatedAt: Date.now(),
+              }
+            : meeting,
+        );
+        state.salaries = state.salaries.map((salary) =>
+          salary.employeeId === id
+            ? {
+                ...salary,
+                employeeId: null,
+                employeeName: salary.employeeName || employee.name,
+                updatedAt: Date.now(),
+              }
+            : salary,
+        );
+        state.tasks = state.tasks.map((task) =>
+          task.assigneeId === id ? { ...task, assigneeId: null } : task,
+        );
+        state.bugs = state.bugs.map((bug) =>
+          bug.assigneeId === id ? { ...bug, assigneeId: null, updatedAt: Date.now() } : bug,
+        );
+        state.automationRules = state.automationRules.map((rule) =>
+          rule.assigneeId === id ? { ...rule, assigneeId: null, updatedAt: Date.now() } : rule,
         );
         return writeState(state);
       },
@@ -1456,6 +3273,29 @@ export function installBrowserApi(): void {
         for (const employee of state.employees) {
           if (employee.departmentId === id) employee.departmentId = null;
         }
+        const departmentThreadIds = new Set(
+          state.chatThreads
+            .filter((thread) => thread.departmentId === id)
+            .map((thread) => thread.id),
+        );
+        if (departmentThreadIds.size) {
+          state.chatThreads = state.chatThreads.filter(
+            (thread) => !departmentThreadIds.has(thread.id),
+          );
+          state.chatMessages = state.chatMessages.filter(
+            (message) => !departmentThreadIds.has(message.threadId),
+          );
+        }
+        state.announcements = state.announcements.map((announcement) =>
+          announcement.departmentId === id
+            ? { ...announcement, departmentId: null, updatedAt: Date.now() }
+            : announcement,
+        );
+        state.meetings = state.meetings.map((meeting) =>
+          meeting.departmentId === id
+            ? { ...meeting, departmentId: null, updatedAt: Date.now() }
+            : meeting,
+        );
         return writeState(state);
       },
     },
@@ -1652,6 +3492,8 @@ export function installBrowserApi(): void {
           amount: amount > 0 ? amount : null,
           note: asString(input.note),
           status: 'pending',
+          decidedBy: '',
+          decisionNote: '',
           createdAt: Date.now(),
           decidedAt: null,
         });
@@ -1676,6 +3518,14 @@ export function installBrowserApi(): void {
           approval.amount = amount > 0 ? amount : null;
         }
         if (input.note !== undefined) approval.note = asString(input.note);
+        if (input.status !== undefined && input.status !== 'pending') {
+          approval.status = input.status;
+          approval.decidedAt = approval.decidedAt ?? Date.now();
+        }
+        if (input.decidedBy !== undefined) approval.decidedBy = asString(input.decidedBy).slice(0, 120);
+        if (input.decisionNote !== undefined) {
+          approval.decisionNote = asString(input.decisionNote).slice(0, 1000);
+        }
         return writeState(state);
       },
       remove: async (id) => {
@@ -1686,12 +3536,18 @@ export function installBrowserApi(): void {
         state.approvals = state.approvals.filter((approval) => approval.id !== id);
         return writeState(state);
       },
-      decide: async (id, status) => {
+      decide: async (id, status, decision) => {
         const state = readState();
         const approval = state.approvals.find((item) => item.id === id);
         if (!approval) throw new Error('Onay bulunamadı.');
         approval.status = status;
         approval.decidedAt = Date.now();
+        if (decision?.decidedBy !== undefined) {
+          approval.decidedBy = asString(decision.decidedBy).slice(0, 120);
+        }
+        if (decision?.decisionNote !== undefined) {
+          approval.decisionNote = asString(decision.decisionNote).slice(0, 1000);
+        }
         return writeState(state);
       },
     },

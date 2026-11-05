@@ -11,6 +11,9 @@ import { CompanyDetail } from './pages/CompanyDetail';
 import { Mail } from './pages/Mail';
 import { Finance } from './pages/Finance';
 import { Operations } from './pages/Operations';
+import { Communication } from './pages/Communication';
+import { Business } from './pages/Business';
+import { Admin } from './pages/Admin';
 import { TasksNotes } from './pages/TasksNotes';
 import { Tools } from './pages/Tools';
 import { Settings } from './pages/Settings';
@@ -145,6 +148,15 @@ export default function App() {
       break;
     case 'operations':
       content = <Operations navigate={navigate} />;
+      break;
+    case 'communication':
+      content = <Communication navigate={navigate} />;
+      break;
+    case 'business':
+      content = <Business navigate={navigate} />;
+      break;
+    case 'admin':
+      content = <Admin navigate={navigate} />;
       break;
     case 'mail':
       content = <Mail />;

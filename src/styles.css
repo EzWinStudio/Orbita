@@ -6846,3 +6846,517 @@ html[data-motion='reduced'] *::after {
     scroll-behavior: auto !important;
   }
 }
+
+/* 2.5.0 finance suite */
+.finance-toolbar {
+  flex-wrap: wrap;
+}
+
+.finance-month-nav {
+  flex: none;
+  gap: 6px;
+}
+
+.finance-month-nav h2 {
+  min-width: 110px;
+  font-size: 13px;
+}
+
+.finance-month-nav .month-badge {
+  display: none;
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.source-salary {
+  color: #ffc88a;
+  border-color: rgba(243, 199, 106, 0.22);
+  background: rgba(243, 199, 106, 0.07);
+}
+
+.source-invoice {
+  color: #9fe8d9;
+  border-color: rgba(62, 242, 181, 0.2);
+  background: rgba(62, 242, 181, 0.06);
+}
+
+.source-payment {
+  color: #8fd4ff;
+  border-color: rgba(116, 200, 255, 0.22);
+  background: rgba(116, 200, 255, 0.07);
+}
+
+.kind-badge.salary-planned,
+.kind-badge.payment-pending,
+.kind-badge.subscription-paused {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.kind-badge.salary-paid,
+.kind-badge.payment-received,
+.kind-badge.subscription-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.kind-badge.subscription-canceled {
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.invoice-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.invoice-status-sent {
+  color: #8fd4ff;
+  background: rgba(116, 200, 255, 0.08);
+}
+
+.invoice-status-paid {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.invoice-status-overdue {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.invoice-status-draft {
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.salary-table,
+.invoice-table,
+.payment-table,
+.subscription-table,
+.report-table {
+  overflow-x: auto;
+  margin: 0 -4px;
+}
+
+.salary-table-head,
+.salary-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.4fr) minmax(100px, 1fr) 92px 110px 96px 58px;
+  align-items: center;
+  gap: 10px;
+  min-width: 700px;
+  padding: 9px 6px;
+}
+
+.invoice-table-head,
+.invoice-row {
+  display: grid;
+  grid-template-columns: 94px minmax(150px, 1.5fr) 92px 110px 100px 86px 64px;
+  align-items: center;
+  gap: 10px;
+  min-width: 850px;
+  padding: 9px 6px;
+}
+
+.payment-table-head,
+.payment-row {
+  display: grid;
+  grid-template-columns: 92px minmax(130px, 1.3fr) 90px 72px 78px 110px 36px;
+  align-items: center;
+  gap: 10px;
+  min-width: 750px;
+  padding: 9px 6px;
+}
+
+.subscription-table-head,
+.subscription-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.5fr) minmax(100px, 1fr) 120px 110px 92px 80px 36px;
+  align-items: center;
+  gap: 10px;
+  min-width: 800px;
+  padding: 9px 6px;
+}
+
+.report-table-head,
+.report-table-row {
+  display: grid;
+  grid-template-columns: 120px repeat(4, minmax(90px, 1fr)) 60px;
+  align-items: center;
+  gap: 10px;
+  min-width: 640px;
+  padding: 9px 6px;
+}
+
+.salary-table-head,
+.invoice-table-head,
+.payment-table-head,
+.subscription-table-head,
+.report-table-head {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  font-size: 8.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+.salary-row,
+.invoice-row,
+.payment-row,
+.subscription-row,
+.report-table-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 10.5px;
+  color: var(--text-2);
+}
+
+.salary-row:last-child,
+.invoice-row:last-child,
+.payment-row:last-child,
+.subscription-row:last-child,
+.report-table-row:last-child {
+  border-bottom: none;
+}
+
+.salary-row:hover,
+.invoice-row:hover,
+.payment-row:hover,
+.subscription-row:hover,
+.report-table-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.salary-employee,
+.invoice-number {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.invoice-customer,
+.subscription-name {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.invoice-customer strong,
+.subscription-name strong {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoice-customer .company-chip,
+.subscription-name small {
+  font-size: 9px;
+  color: var(--text-3);
+}
+
+.subscription-name small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 2px 0 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.025);
+  font-size: 9.5px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.form-callout svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+.amount-currency-suffix {
+  border-left: 1px solid var(--border);
+  padding-left: 8px;
+  color: var(--text-3);
+}
+
+.invoice-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 2px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.022);
+}
+
+.invoice-preview > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.invoice-preview span {
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+}
+
+.invoice-preview strong {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.invoice-preview-total {
+  margin-left: auto;
+  text-align: right;
+}
+
+.invoice-preview-payments {
+  background: rgba(62, 242, 181, 0.03);
+}
+
+.report-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.report-kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.pl-row strong {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.pl-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 0 3px 12px;
+  font-size: 9.5px;
+  color: var(--text-3);
+}
+
+.pl-sub span:last-child {
+  font-family: var(--mono);
+}
+
+.pl-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text);
+}
+
+.pl-total strong {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.pl-total.is-negative strong {
+  color: var(--danger);
+}
+
+.report-empty {
+  padding: 18px 0;
+  font-size: 10.5px;
+  color: var(--text-3);
+}
+
+.company-report {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.company-report-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.company-report-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.company-report-name {
+  font-size: 10.5px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-report-bar {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.company-report-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.company-report-row strong {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.commit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.commit-card {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.commit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.commit-card > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.commit-label {
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+}
+
+.commit-card strong {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.commit-card small {
+  font-size: 9px;
+  color: var(--text-3);
+}
+
+@media (max-width: 1360px) {
+  .report-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .finance-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .finance-month-nav {
+    justify-content: space-between;
+  }
+
+  .report-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .report-toolbar .month-nav {
+    justify-content: space-between;
+  }
+
+  .commit-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

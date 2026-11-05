@@ -10,6 +10,10 @@ async function invoke(channel, payload) {
   return response.data;
 }
 
+function local(entity, op, input) {
+  return invoke('data:local', { entity, op, input });
+}
+
 contextBridge.exposeInMainWorld('ezwin', {
   getInitial: () => invoke('state:get'),
   company: {
@@ -36,6 +40,107 @@ contextBridge.exposeInMainWorld('ezwin', {
   finance: {
     create: (data) => invoke('finance:create', data),
     remove: (id) => invoke('finance:delete', { id }),
+  },
+  salary: {
+    create: (data) => local('salary', 'create', data),
+    update: (data) => local('salary', 'update', data),
+    remove: (id) => local('salary', 'remove', { id }),
+  },
+  invoice: {
+    create: (data) => local('invoice', 'create', data),
+    update: (data) => local('invoice', 'update', data),
+    remove: (id) => local('invoice', 'remove', { id }),
+  },
+  customerPayment: {
+    create: (data) => local('customerPayment', 'create', data),
+    update: (data) => local('customerPayment', 'update', data),
+    remove: (id) => local('customerPayment', 'remove', { id }),
+  },
+  subscription: {
+    create: (data) => local('subscription', 'create', data),
+    update: (data) => local('subscription', 'update', data),
+    remove: (id) => local('subscription', 'remove', { id }),
+  },
+  chat: {
+    createThread: (data) => local('chat', 'createThread', data),
+    removeThread: (id) => local('chat', 'removeThread', { id }),
+    sendMessage: (data) => local('chat', 'sendMessage', data),
+    removeMessage: (id) => local('chat', 'removeMessage', { id }),
+  },
+  announcement: {
+    create: (data) => local('announcement', 'create', data),
+    update: (data) => local('announcement', 'update', data),
+    remove: (id) => local('announcement', 'remove', { id }),
+  },
+  meeting: {
+    create: (data) => local('meeting', 'create', data),
+    update: (data) => local('meeting', 'update', data),
+    remove: (id) => local('meeting', 'remove', { id }),
+  },
+  notification: {
+    markRead: (ids) => local('notification', 'markRead', { ids }),
+  },
+  client: {
+    create: (data) => local('client', 'create', data),
+    update: (data) => local('client', 'update', data),
+    remove: (id) => local('client', 'remove', { id }),
+  },
+  contract: {
+    create: (data) => local('contract', 'create', data),
+    update: (data) => local('contract', 'update', data),
+    remove: (id) => local('contract', 'remove', { id }),
+  },
+  document: {
+    create: (data) => local('document', 'create', data),
+    update: (data) => local('document', 'update', data),
+    remove: (id) => local('document', 'remove', { id }),
+  },
+  bug: {
+    create: (data) => local('bug', 'create', data),
+    update: (data) => local('bug', 'update', data),
+    remove: (id) => local('bug', 'remove', { id }),
+  },
+  automation: {
+    create: (data) => local('automation', 'create', data),
+    update: (data) => local('automation', 'update', data),
+    remove: (id) => local('automation', 'remove', { id }),
+    run: (id) => local('automation', 'run', { id }),
+  },
+  security: {
+    log: (data) => local('security', 'log', data),
+    clear: () => local('security', 'clear', {}),
+  },
+  employee: {
+    create: (data) => local('employee', 'create', data),
+    update: (data) => local('employee', 'update', data),
+    remove: (id) => local('employee', 'remove', { id }),
+  },
+  department: {
+    create: (data) => local('department', 'create', data),
+    update: (data) => local('department', 'update', data),
+    remove: (id) => local('department', 'remove', { id }),
+  },
+  role: {
+    create: (data) => local('role', 'create', data),
+    update: (data) => local('role', 'update', data),
+    remove: (id) => local('role', 'remove', { id }),
+  },
+  performanceReview: {
+    create: (data) => local('performanceReview', 'create', data),
+    update: (data) => local('performanceReview', 'update', data),
+    remove: (id) => local('performanceReview', 'remove', { id }),
+  },
+  project: {
+    create: (data) => local('project', 'create', data),
+    update: (data) => local('project', 'update', data),
+    remove: (id) => local('project', 'remove', { id }),
+  },
+  approval: {
+    create: (data) => local('approval', 'create', data),
+    update: (data) => local('approval', 'update', data),
+    remove: (id) => local('approval', 'remove', { id }),
+    decide: (id, status, decision) =>
+      local('approval', 'decide', { id, status, decision: decision || {} }),
   },
   settings: {
     update: (data) => invoke('settings:update', data),

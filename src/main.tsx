@@ -9,6 +9,8 @@ import './styles.css';
 import './styles-mail.css';
 import './styles-youtube.css';
 import './styles-studio.css';
+import './styles-communication.css';
+import './styles-admin.css';
 
 applyTheme(storedTheme());
 applyReduceMotion(storedReduceMotion());

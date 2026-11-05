@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Activity,
+  BriefcaseBusiness,
   Building2,
   Calculator,
   FolderKanban,
@@ -8,8 +9,10 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  MessagesSquare,
   Plus,
   Settings,
+  ShieldCheck,
   Wallet,
 } from 'lucide-react';
 import { Wordmark } from '../components/Logo';
@@ -19,6 +22,7 @@ import { IS_TRAY } from '../lib/runtime';
 import type { TranslationKey } from '../i18n/core';
 import type { Page } from '../nav';
 import { formatClock, formatLongDate } from '../lib/format';
+import { buildInbox, unreadInbox } from '../lib/communication';
 import { useWebAuth } from './WebAuthGate';
 import { AccountAvatar } from './AccountAvatar';
 import {
@@ -43,6 +47,9 @@ const NAV_ITEMS: { page: Page; label: TranslationKey; icon: typeof LayoutDashboa
 const WORK_ITEMS: { page: Page; label: TranslationKey; icon: typeof LayoutDashboard }[] = [
   { page: 'finance', label: 'Finans', icon: Wallet },
   { page: 'operations', label: 'Operasyon', icon: FolderKanban },
+  { page: 'communication', label: 'İletişim', icon: MessagesSquare },
+  { page: 'business', label: 'İş merkezi', icon: BriefcaseBusiness },
+  { page: 'admin', label: 'Yönetim', icon: ShieldCheck },
   { page: 'tasks', label: 'Görev & Notlar', icon: ListChecks },
   { page: 'tools', label: 'Hesap & Kur', icon: Calculator },
   { page: 'translate', label: 'Çeviri', icon: Languages },
@@ -91,6 +98,10 @@ export function WebSidebar({ page, companyId, navigate, open }: WebSidebarProps)
 
   const openTaskCount = data.tasks.filter((task) => !task.done).length;
   const pendingApprovalCount = data.approvals.filter((approval) => approval.status === 'pending').length;
+  const unreadNotificationCount = unreadInbox(
+    buildInbox(data),
+    data.notificationReads,
+  ).length;
   const offlineCount = Object.values(data.statuses).filter(
     (status) => status.state === 'offline',
   ).length;
@@ -157,6 +168,14 @@ export function WebSidebar({ page, companyId, navigate, open }: WebSidebarProps)
                     title={t('{count} bekleyen onay', { count: pendingApprovalCount })}
                   >
                     {pendingApprovalCount}
+                  </span>
+                ) : null}
+                {item.page === 'communication' && unreadNotificationCount > 0 ? (
+                  <span
+                    className="nav-badge nav-badge-warning"
+                    title={t('{count} okunmamış bildirim', { count: unreadNotificationCount })}
+                  >
+                    {unreadNotificationCount}
                   </span>
                 ) : null}
               </button>

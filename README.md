@@ -13,7 +13,7 @@ Bu depo, Orbita ekosistemindeki her şeyi tek yerden indirmek için hazırlandı
 | Canlı web uygulaması | [orbita.wasmer.app](https://orbita.wasmer.app) |
 | Windows kurulum sayfası | [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) |
 
-Kurulum paketi `Orbita-Setup-2.3.0.exe` adıyla sürüm sayfasına yüklenir. Premium kurulum sayfası [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) üzerinden doğrudan indirilebilir. Uygulama `%LOCALAPPDATA%\Programs\Orbita` klasörüne kurulur; mevcut EZWIN HUB verileri, yedekler ve bot sırları korunur. İlk açılışta mevcut WebView2 oturumu ve şirket verileri yeni Electron profiline otomatik taşınır.
+Kurulum paketi `Orbita-Setup-2.6.0.exe` adıyla sürüm sayfasına yüklenir. Premium kurulum sayfası [orbita.wasmer.app/indir](https://orbita.wasmer.app/indir/) üzerinden doğrudan indirilebilir. Uygulama `%LOCALAPPDATA%\Programs\Orbita` klasörüne kurulur; mevcut EZWIN HUB verileri, yedekler ve bot sırları korunur. İlk açılışta mevcut WebView2 oturumu ve şirket verileri yeni Electron profiline otomatik taşınır.
 
 Kanıtlanmış eski adres [ezwin-hub.wasmer.app](https://ezwin-hub.wasmer.app) de aynı Orbita sürümünü sunar.
 
@@ -31,7 +31,7 @@ Betik; uygulamayı, Orbita web sitesini, Şimşek Diecast'i, tüm şirket sitele
 
 | Klasör | İçerik |
 | --- | --- |
-| `src/` | React/TypeScript arayüzü, 10 dil, kimlik doğrulama, çeviri, servis izleme |
+| `src/` | React/TypeScript arayüzü, 10 dil, kimlik doğrulama, finans, İK, iletişim, yönetim ve işletme modülleri |
 | `src/web/` | Tarayıcı veri katmanı, giriş kapısı, tepsi köprüsü, şifreli eşitleme |
 | `electron/` | Güncel Electron masaüstü kabuğu, tepsi ve arka plan ajanı |
 | `installer/` | NSIS kurulum tanımı ve veri göçü adımları |
@@ -42,7 +42,7 @@ Betik; uygulamayı, Orbita web sitesini, Şimşek Diecast'i, tüm şirket sitele
 | `public/` | Marka ikonları, şirket logoları, yerel seed verisi |
 
 
-Masaüstü ürünü **Electron 45 tabanlı Windows uygulamasıdır** (sürüm 2.2.0). Gömülü Chromium ile gelir; harici WebView2 çalışma zamanı gerekmez. Tepside çalışır, kapatınca küçülür, site ve bot sağlığını arka planda izler, günlük yedek alır ve GitHub Releases üzerinden otomatik güncellenir. C# + WebView2 kaynakları `tray/` altında arşiv olarak korunur.
+Masaüstü ürünü **Electron 45 tabanlı Windows uygulamasıdır** (sürüm 2.6.0). Gömülü Chromium ile gelir; harici WebView2 çalışma zamanı gerekmez. Tepside çalışır, kapatınca küçülür, site ve bot sağlığını arka planda izler, günlük yedek alır ve GitHub Releases üzerinden otomatik güncellenir. C# + WebView2 kaynakları `tray/` altında arşiv olarak korunur.
 
 ## Siteler
 
@@ -100,7 +100,7 @@ npm install
 npm run build:electron
 ```
 
-Çıktı `release-artifacts-electron/Orbita-Setup-2.2.0.exe` olarak oluşur. Taşınabilir paket için:
+Çıktı `release-artifacts-electron/Orbita-Setup-2.6.0.exe` olarak oluşur. Taşınabilir paket için:
 
 ```sh
 npx electron-builder --win portable

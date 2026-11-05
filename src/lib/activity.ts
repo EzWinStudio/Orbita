@@ -1,7 +1,7 @@
 import type { AppData } from '../types';
 import type { Page } from '../nav';
 import type { TFunction } from '../i18n/core';
-import { formatMoney, monthLabel } from './format';
+import { formatDate, formatMoney, monthLabel } from './format';
 
 export type ActivityKind =
   | 'company'
@@ -17,6 +17,12 @@ export type ActivityKind =
   | 'department'
   | 'role'
   | 'review'
+  | 'salary'
+  | 'invoice'
+  | 'payment'
+  | 'subscription'
+  | 'announcement'
+  | 'meeting'
   | 'approval'
   | 'approval_approved'
   | 'approval_rejected';
@@ -78,6 +84,108 @@ export function buildActivity(data: AppData, t: TFunction, limit = 8): ActivityI
       meta: [companyName.get(entry.companyId), entry.category].filter(Boolean).join(' · '),
       companyId: entry.companyId,
       page: 'finance',
+    });
+  }
+
+  for (const salary of data.salaries) {
+    items.push({
+      id: `salary-${salary.id}`,
+      kind: 'salary',
+      tone: salary.status === 'paid' ? 'danger' : 'amber',
+      at: salary.updatedAt,
+      title:
+        salary.status === 'paid'
+          ? t('Maaş ödendi · {amount}', { amount: formatMoney(salary.amount, currency) })
+          : t('Maaş planlandı · {amount}', { amount: formatMoney(salary.amount, currency) }),
+      meta: [salary.employeeName, monthLabel(salary.period)]
+        .filter(Boolean)
+        .join(' · '),
+      companyId: salary.companyId,
+      page: 'finance',
+    });
+  }
+
+  for (const invoice of data.invoices) {
+    items.push({
+      id: `invoice-${invoice.id}`,
+      kind: 'invoice',
+      tone: invoice.status === 'paid' ? 'mint' : 'default',
+      at: invoice.updatedAt,
+      title:
+        invoice.updatedAt > invoice.createdAt + 1000
+          ? t('Fatura güncellendi · {number}', { number: invoice.number })
+          : t('Fatura oluşturuldu · {number}', { number: invoice.number }),
+      meta: [invoice.customerName, companyName.get(invoice.companyId)]
+        .filter(Boolean)
+        .join(' · '),
+      companyId: invoice.companyId,
+      page: 'finance',
+    });
+  }
+
+  for (const payment of data.customerPayments) {
+    items.push({
+      id: `payment-${payment.id}`,
+      kind: 'payment',
+      tone: payment.status === 'received' ? 'mint' : 'amber',
+      at: payment.updatedAt,
+      title:
+        payment.status === 'received'
+          ? t('Ödeme alındı · {amount}', { amount: formatMoney(payment.amount, currency) })
+          : t('Ödeme bekliyor · {amount}', { amount: formatMoney(payment.amount, currency) }),
+      meta: [payment.customerName, companyName.get(payment.companyId)]
+        .filter(Boolean)
+        .join(' · '),
+      companyId: payment.companyId,
+      page: 'finance',
+    });
+  }
+
+  for (const subscription of data.subscriptions) {
+    items.push({
+      id: `subscription-${subscription.id}`,
+      kind: 'subscription',
+      tone: subscription.status === 'active' ? 'default' : 'amber',
+      at: subscription.updatedAt,
+      title:
+        subscription.updatedAt > subscription.createdAt + 1000
+          ? t('Abonelik güncellendi')
+          : t('Abonelik eklendi'),
+      meta: [subscription.name, subscription.vendor].filter(Boolean).join(' · '),
+      companyId: subscription.companyId,
+      page: 'finance',
+    });
+  }
+
+  for (const announcement of data.announcements) {
+    if (announcement.status !== 'published' || !announcement.publishedAt) continue;
+    items.push({
+      id: `announcement-${announcement.id}`,
+      kind: 'announcement',
+      tone: announcement.priority === 'urgent' ? 'danger' : announcement.priority === 'important' ? 'amber' : 'default',
+      at: announcement.publishedAt,
+      title: t('Duyuru yayınlandı'),
+      meta: `${announcement.title} · ${companyName.get(announcement.companyId) ?? t('Şirketsiz')}`,
+      companyId: announcement.companyId,
+      page: 'communication',
+    });
+  }
+
+  for (const meeting of data.meetings) {
+    items.push({
+      id: `meeting-${meeting.id}`,
+      kind: 'meeting',
+      tone: meeting.status === 'canceled' ? 'danger' : meeting.status === 'done' ? 'mint' : 'amber',
+      at: meeting.updatedAt,
+      title:
+        meeting.status === 'done'
+          ? t('Toplantı tamamlandı')
+          : meeting.status === 'canceled'
+            ? t('Toplantı iptal edildi')
+            : t('Toplantı planlandı'),
+      meta: `${meeting.title} · ${formatDate(meeting.date)}`,
+      companyId: meeting.companyId,
+      page: 'communication',
     });
   }
 

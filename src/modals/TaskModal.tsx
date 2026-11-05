@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ListChecks, X } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { useApp } from '../store';
@@ -22,6 +22,7 @@ export function TaskModal({ open, onClose, task, defaultCompanyId }: TaskModalPr
   const [companyId, setCompanyId] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('med');
   const [due, setDue] = useState('');
+  const [assigneeId, setAssigneeId] = useState('');
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -33,11 +34,20 @@ export function TaskModal({ open, onClose, task, defaultCompanyId }: TaskModalPr
     setCompanyId(task?.companyId ?? defaultCompanyId ?? '');
     setPriority(task?.priority ?? 'med');
     setDue(task?.due ?? '');
+    setAssigneeId(task?.assigneeId ?? '');
     setDone(task?.done ?? false);
     setBusy(false);
     setTouched(false);
     window.setTimeout(() => titleRef.current?.focus(), 30);
   }, [open, task, defaultCompanyId]);
+
+  const employees = useMemo(
+    () =>
+      (data?.employees ?? []).filter(
+        (employee) => employee.companyId === companyId && employee.status !== 'inactive',
+      ),
+    [data?.employees, companyId],
+  );
 
   const canSave = title.trim().length > 0;
 
@@ -50,6 +60,7 @@ export function TaskModal({ open, onClose, task, defaultCompanyId }: TaskModalPr
       companyId: companyId || null,
       priority,
       due: due || null,
+      assigneeId: assigneeId || null,
     };
     const success = task
       ? await actions.updateTask({ id: task.id, ...payload, done })
@@ -126,7 +137,10 @@ export function TaskModal({ open, onClose, task, defaultCompanyId }: TaskModalPr
             <select
               className="input select"
               value={companyId}
-              onChange={(event) => setCompanyId(event.target.value)}
+              onChange={(event) => {
+                setCompanyId(event.target.value);
+                setAssigneeId('');
+              }}
             >
               <option value="">{t('Şirketsiz')}</option>
               {data?.companies.map((company) => (
@@ -159,6 +173,23 @@ export function TaskModal({ open, onClose, task, defaultCompanyId }: TaskModalPr
             </div>
           </label>
         </div>
+
+        <label className="form-field">
+          <span className="form-label">{t('Atanan')} <span className="form-optional">{t('isteğe bağlı')}</span></span>
+          <select
+            className="input select"
+            value={assigneeId}
+            onChange={(event) => setAssigneeId(event.target.value)}
+            disabled={!companyId}
+          >
+            <option value="">{t('Atanmadı')}</option>
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {employee.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <div className="form-field">
           <span className="form-label">{t('Öncelik')}</span>

@@ -226,6 +226,7 @@ export interface Task {
   priority: TaskPriority;
   due: string | null;
   done: boolean;
+  assigneeId: string | null;
   createdAt: number;
   completedAt?: number | null;
 }
@@ -314,6 +315,8 @@ export interface Approval {
   amount: number | null;
   note: string;
   status: ApprovalStatus;
+  decidedBy: string;
+  decisionNote: string;
   createdAt: number;
   decidedAt: number | null;
 }
@@ -337,6 +340,243 @@ export interface FinanceEntry {
   note: string;
   date: string;
   createdAt: number;
+}
+
+export type SalaryStatus = 'planned' | 'paid';
+
+export interface SalaryPayment {
+  id: string;
+  companyId: string;
+  employeeId: string | null;
+  employeeName: string;
+  period: string;
+  amount: number;
+  status: SalaryStatus;
+  paidAt: number | null;
+  note: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'canceled';
+
+export interface Invoice {
+  id: string;
+  companyId: string;
+  number: string;
+  customerName: string;
+  customerEmail: string;
+  amount: number;
+  taxRate: number;
+  issueDate: string;
+  dueDate: string;
+  status: InvoiceStatus;
+  note: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type PaymentMethod = 'transfer' | 'card' | 'cash' | 'other';
+export type CustomerPaymentStatus = 'pending' | 'received';
+
+export interface CustomerPayment {
+  id: string;
+  companyId: string;
+  customerName: string;
+  invoiceId: string | null;
+  amount: number;
+  method: PaymentMethod;
+  status: CustomerPaymentStatus;
+  date: string;
+  note: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type SubscriptionKind = 'subscription' | 'license';
+export type BillingCycle = 'monthly' | 'yearly';
+export type SubscriptionStatus = 'active' | 'paused' | 'canceled';
+
+export interface Subscription {
+  id: string;
+  companyId: string;
+  name: string;
+  vendor: string;
+  kind: SubscriptionKind;
+  amount: number;
+  cycle: BillingCycle;
+  nextRenewal: string;
+  status: SubscriptionStatus;
+  note: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type ChatScope = 'company' | 'department' | 'direct';
+
+export interface ChatThread {
+  id: string;
+  companyId: string;
+  scope: ChatScope;
+  departmentId: string | null;
+  employeeId: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  threadId: string;
+  author: string;
+  body: string;
+  createdAt: number;
+}
+
+export type AnnouncementAudience = 'company' | 'department';
+export type AnnouncementVisibility = 'team' | 'admin';
+export type AnnouncementStatus = 'draft' | 'published' | 'archived';
+export type AnnouncementPriority = 'normal' | 'important' | 'urgent';
+
+export interface Announcement {
+  id: string;
+  companyId: string;
+  departmentId: string | null;
+  title: string;
+  body: string;
+  audience: AnnouncementAudience;
+  visibility: AnnouncementVisibility;
+  priority: AnnouncementPriority;
+  pinned: boolean;
+  status: AnnouncementStatus;
+  author: string;
+  publishedAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type MeetingStatus = 'planned' | 'done' | 'canceled';
+
+export interface Meeting {
+  id: string;
+  companyId: string;
+  departmentId: string | null;
+  title: string;
+  agenda: string;
+  date: string;
+  time: string;
+  durationMin: number;
+  location: string;
+  attendeeIds: string[];
+  status: MeetingStatus;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface NotificationRead {
+  id: string;
+  readAt: number;
+}
+
+export type ClientStatus = 'lead' | 'active' | 'paused' | 'lost';
+
+export interface Client {
+  id: string;
+  companyId: string;
+  name: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  status: ClientStatus;
+  value: number;
+  nextFollowUp: string | null;
+  note: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type ContractStatus = 'active' | 'pending' | 'expired' | 'terminated';
+export type ContractKind = 'service' | 'supplier' | 'nda' | 'employment' | 'other';
+
+export interface Contract {
+  id: string;
+  companyId: string;
+  title: string;
+  counterparty: string;
+  kind: ContractKind;
+  startDate: string | null;
+  endDate: string | null;
+  value: number;
+  status: ContractStatus;
+  note: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type DocumentCategory = 'contract' | 'finance' | 'hr' | 'legal' | 'project' | 'other';
+
+export interface CompanyDocument {
+  id: string;
+  companyId: string;
+  title: string;
+  category: DocumentCategory;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  hasFile: boolean;
+  note: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type BugSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type BugStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+
+export interface BugReport {
+  id: string;
+  companyId: string;
+  projectId: string | null;
+  title: string;
+  description: string;
+  severity: BugSeverity;
+  status: BugStatus;
+  reportedBy: string;
+  assigneeId: string | null;
+  createdAt: number;
+  updatedAt: number;
+  resolvedAt: number | null;
+}
+
+export type AutomationCadence = 'daily' | 'weekly' | 'monthly';
+
+export interface AutomationRule {
+  id: string;
+  companyId: string;
+  title: string;
+  priority: TaskPriority;
+  assigneeId: string | null;
+  cadence: AutomationCadence;
+  nextRun: string;
+  enabled: boolean;
+  lastRun: number | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type SecurityEventKind =
+  | 'role'
+  | 'approval'
+  | 'backup'
+  | 'import'
+  | 'security'
+  | 'account';
+
+export interface SecurityEvent {
+  id: string;
+  at: number;
+  kind: SecurityEventKind;
+  actor: string;
+  detail: string;
+  companyId: string | null;
 }
 
 export interface HistoryPoint {
@@ -634,6 +874,21 @@ export interface AppData {
   tasks: Task[];
   notes: Note[];
   finance: FinanceEntry[];
+  salaries: SalaryPayment[];
+  invoices: Invoice[];
+  customerPayments: CustomerPayment[];
+  subscriptions: Subscription[];
+  chatThreads: ChatThread[];
+  chatMessages: ChatMessage[];
+  announcements: Announcement[];
+  meetings: Meeting[];
+  notificationReads: NotificationRead[];
+  clients: Client[];
+  contracts: Contract[];
+  documents: CompanyDocument[];
+  bugs: BugReport[];
+  automationRules: AutomationRule[];
+  securityEvents: SecurityEvent[];
   employees: Employee[];
   projects: Project[];
   approvals: Approval[];
@@ -716,6 +971,7 @@ export interface CreateTaskInput {
   companyId?: string | null;
   priority?: TaskPriority;
   due?: string | null;
+  assigneeId?: string | null;
 }
 
 export interface UpdateTaskInput {
@@ -725,6 +981,7 @@ export interface UpdateTaskInput {
   priority?: TaskPriority;
   due?: string | null;
   done?: boolean;
+  assigneeId?: string | null;
 }
 
 export interface CreateEmployeeInput {
@@ -834,6 +1091,9 @@ export interface UpdateApprovalInput {
   requestedBy?: string;
   amount?: number | null;
   note?: string;
+  status?: ApprovalStatus;
+  decidedBy?: string;
+  decisionNote?: string;
 }
 
 export interface CreateNoteInput {
@@ -858,6 +1118,282 @@ export interface CreateFinanceInput {
   category?: string;
   note?: string;
   date: string;
+}
+
+export interface CreateSalaryInput {
+  companyId: string;
+  employeeId: string;
+  period: string;
+  amount: number;
+  status?: SalaryStatus;
+  note?: string;
+}
+
+export interface UpdateSalaryInput {
+  id: string;
+  employeeId?: string;
+  period?: string;
+  amount?: number;
+  status?: SalaryStatus;
+  note?: string;
+}
+
+export interface CreateInvoiceInput {
+  companyId: string;
+  customerName: string;
+  customerEmail?: string;
+  amount: number;
+  taxRate?: number;
+  issueDate: string;
+  dueDate: string;
+  status?: InvoiceStatus;
+  note?: string;
+}
+
+export interface UpdateInvoiceInput {
+  id: string;
+  companyId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  amount?: number;
+  taxRate?: number;
+  issueDate?: string;
+  dueDate?: string;
+  status?: InvoiceStatus;
+  note?: string;
+}
+
+export interface CreateCustomerPaymentInput {
+  companyId: string;
+  customerName: string;
+  invoiceId?: string | null;
+  amount: number;
+  method?: PaymentMethod;
+  status?: CustomerPaymentStatus;
+  date: string;
+  note?: string;
+}
+
+export interface UpdateCustomerPaymentInput {
+  id: string;
+  companyId?: string;
+  customerName?: string;
+  invoiceId?: string | null;
+  amount?: number;
+  method?: PaymentMethod;
+  status?: CustomerPaymentStatus;
+  date?: string;
+  note?: string;
+}
+
+export interface CreateSubscriptionInput {
+  companyId: string;
+  name: string;
+  vendor?: string;
+  kind?: SubscriptionKind;
+  amount: number;
+  cycle?: BillingCycle;
+  nextRenewal: string;
+  status?: SubscriptionStatus;
+  note?: string;
+}
+
+export interface UpdateSubscriptionInput {
+  id: string;
+  companyId?: string;
+  name?: string;
+  vendor?: string;
+  kind?: SubscriptionKind;
+  amount?: number;
+  cycle?: BillingCycle;
+  nextRenewal?: string;
+  status?: SubscriptionStatus;
+  note?: string;
+}
+
+export interface CreateChatThreadInput {
+  companyId: string;
+  scope: ChatScope;
+  departmentId?: string;
+  employeeId?: string;
+}
+
+export interface CreateChatMessageInput {
+  threadId: string;
+  author?: string;
+  body: string;
+}
+
+export interface CreateAnnouncementInput {
+  companyId: string;
+  departmentId?: string;
+  title: string;
+  body: string;
+  audience?: AnnouncementAudience;
+  visibility?: AnnouncementVisibility;
+  priority?: AnnouncementPriority;
+  pinned?: boolean;
+  status?: AnnouncementStatus;
+  author?: string;
+}
+
+export interface UpdateAnnouncementInput {
+  id: string;
+  companyId?: string;
+  departmentId?: string | null;
+  title?: string;
+  body?: string;
+  audience?: AnnouncementAudience;
+  visibility?: AnnouncementVisibility;
+  priority?: AnnouncementPriority;
+  pinned?: boolean;
+  status?: AnnouncementStatus;
+  author?: string;
+}
+
+export interface CreateMeetingInput {
+  companyId: string;
+  departmentId?: string;
+  title: string;
+  agenda?: string;
+  date: string;
+  time: string;
+  durationMin?: number;
+  location?: string;
+  attendeeIds?: string[];
+  status?: MeetingStatus;
+}
+
+export interface UpdateMeetingInput {
+  id: string;
+  companyId?: string;
+  departmentId?: string | null;
+  title?: string;
+  agenda?: string;
+  date?: string;
+  time?: string;
+  durationMin?: number;
+  location?: string;
+  attendeeIds?: string[];
+  status?: MeetingStatus;
+}
+
+export interface CreateClientInput {
+  companyId: string;
+  name: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  status?: ClientStatus;
+  value?: number;
+  nextFollowUp?: string | null;
+  note?: string;
+}
+
+export interface UpdateClientInput {
+  id: string;
+  companyId?: string;
+  name?: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  status?: ClientStatus;
+  value?: number;
+  nextFollowUp?: string | null;
+  note?: string;
+}
+
+export interface CreateContractInput {
+  companyId: string;
+  title: string;
+  counterparty?: string;
+  kind?: ContractKind;
+  startDate?: string | null;
+  endDate?: string | null;
+  value?: number;
+  status?: ContractStatus;
+  note?: string;
+}
+
+export interface UpdateContractInput {
+  id: string;
+  companyId?: string;
+  title?: string;
+  counterparty?: string;
+  kind?: ContractKind;
+  startDate?: string | null;
+  endDate?: string | null;
+  value?: number;
+  status?: ContractStatus;
+  note?: string;
+}
+
+export interface CreateDocumentInput {
+  id?: string;
+  companyId: string;
+  title: string;
+  category?: DocumentCategory;
+  fileName?: string;
+  mimeType?: string;
+  size?: number;
+  hasFile?: boolean;
+  note?: string;
+}
+
+export interface UpdateDocumentInput {
+  id: string;
+  companyId?: string;
+  title?: string;
+  category?: DocumentCategory;
+  fileName?: string;
+  mimeType?: string;
+  size?: number;
+  hasFile?: boolean;
+  note?: string;
+}
+
+export interface CreateBugInput {
+  companyId: string;
+  projectId?: string | null;
+  title: string;
+  description?: string;
+  severity?: BugSeverity;
+  status?: BugStatus;
+  reportedBy?: string;
+  assigneeId?: string | null;
+}
+
+export interface UpdateBugInput {
+  id: string;
+  companyId?: string;
+  projectId?: string | null;
+  title?: string;
+  description?: string;
+  severity?: BugSeverity;
+  status?: BugStatus;
+  reportedBy?: string;
+  assigneeId?: string | null;
+}
+
+export interface CreateAutomationRuleInput {
+  companyId: string;
+  title: string;
+  priority?: TaskPriority;
+  assigneeId?: string | null;
+  cadence?: AutomationCadence;
+  nextRun?: string;
+  enabled?: boolean;
+}
+
+export interface UpdateAutomationRuleInput {
+  id: string;
+  companyId?: string;
+  title?: string;
+  priority?: TaskPriority;
+  assigneeId?: string | null;
+  cadence?: AutomationCadence;
+  nextRun?: string;
+  enabled?: boolean;
 }
 
 export interface UpdateSettingsInput {
@@ -911,6 +1447,80 @@ export interface EzwinApi {
     create: (input: CreateFinanceInput) => Promise<AppData>;
     remove: (id: string) => Promise<AppData>;
   };
+  salary: {
+    create: (input: CreateSalaryInput) => Promise<AppData>;
+    update: (input: UpdateSalaryInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  invoice: {
+    create: (input: CreateInvoiceInput) => Promise<AppData>;
+    update: (input: UpdateInvoiceInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  customerPayment: {
+    create: (input: CreateCustomerPaymentInput) => Promise<AppData>;
+    update: (input: UpdateCustomerPaymentInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  subscription: {
+    create: (input: CreateSubscriptionInput) => Promise<AppData>;
+    update: (input: UpdateSubscriptionInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  chat: {
+    createThread: (input: CreateChatThreadInput) => Promise<AppData>;
+    removeThread: (id: string) => Promise<AppData>;
+    sendMessage: (input: CreateChatMessageInput) => Promise<AppData>;
+    removeMessage: (id: string) => Promise<AppData>;
+  };
+  announcement: {
+    create: (input: CreateAnnouncementInput) => Promise<AppData>;
+    update: (input: UpdateAnnouncementInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  meeting: {
+    create: (input: CreateMeetingInput) => Promise<AppData>;
+    update: (input: UpdateMeetingInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  notification: {
+    markRead: (ids: string[]) => Promise<AppData>;
+  };
+  client: {
+    create: (input: CreateClientInput) => Promise<AppData>;
+    update: (input: UpdateClientInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  contract: {
+    create: (input: CreateContractInput) => Promise<AppData>;
+    update: (input: UpdateContractInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  document: {
+    create: (input: CreateDocumentInput) => Promise<AppData>;
+    update: (input: UpdateDocumentInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  bug: {
+    create: (input: CreateBugInput) => Promise<AppData>;
+    update: (input: UpdateBugInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+  };
+  automation: {
+    create: (input: CreateAutomationRuleInput) => Promise<AppData>;
+    update: (input: UpdateAutomationRuleInput) => Promise<AppData>;
+    remove: (id: string) => Promise<AppData>;
+    run: (id: string) => Promise<AppData>;
+  };
+  security: {
+    log: (input: {
+      kind: SecurityEventKind;
+      actor?: string;
+      detail: string;
+      companyId?: string | null;
+    }) => Promise<AppData>;
+    clear: () => Promise<AppData>;
+  };
   employee: {
     create: (input: CreateEmployeeInput) => Promise<AppData>;
     update: (input: UpdateEmployeeInput) => Promise<AppData>;
@@ -940,7 +1550,11 @@ export interface EzwinApi {
     create: (input: CreateApprovalInput) => Promise<AppData>;
     update: (input: UpdateApprovalInput) => Promise<AppData>;
     remove: (id: string) => Promise<AppData>;
-    decide: (id: string, status: Exclude<ApprovalStatus, 'pending'>) => Promise<AppData>;
+    decide: (
+      id: string,
+      status: Exclude<ApprovalStatus, 'pending'>,
+      decision?: { decidedBy?: string; decisionNote?: string },
+    ) => Promise<AppData>;
   };
   settings: {
     update: (input: UpdateSettingsInput) => Promise<AppData>;

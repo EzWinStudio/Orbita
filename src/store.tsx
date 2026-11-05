@@ -21,15 +21,28 @@ import type {
   UpdateSecurityInput,
   AssetTestInput,
   CreateApprovalInput,
+  CreateAnnouncementInput,
   CreateAssetInput,
+  CreateAutomationRuleInput,
+  CreateBugInput,
+  CreateChatMessageInput,
+  CreateChatThreadInput,
+  CreateClientInput,
   CreateCompanyInput,
+  CreateContractInput,
   CreateDepartmentInput,
+  CreateDocumentInput,
   CreateEmployeeInput,
   CreateFinanceInput,
+  CreateInvoiceInput,
+  CreateCustomerPaymentInput,
+  CreateMeetingInput,
   CreateNoteInput,
   CreatePerformanceReviewInput,
   CreateProjectInput,
   CreateRoleInput,
+  CreateSalaryInput,
+  CreateSubscriptionInput,
   CreateTaskInput,
   InitialPayload,
   LanguageCode,
@@ -37,18 +50,30 @@ import type {
   RatesPayload,
   TestResult,
   UpdateApprovalInput,
+  UpdateAnnouncementInput,
   UpdateAssetInput,
+  UpdateAutomationRuleInput,
+  UpdateBugInput,
+  UpdateClientInput,
   UpdateCompanyInput,
+  UpdateContractInput,
   UpdateDepartmentInput,
+  UpdateDocumentInput,
   UpdateEmployeeInput,
+  UpdateInvoiceInput,
+  UpdateCustomerPaymentInput,
+  UpdateMeetingInput,
   UpdateNoteInput,
   UpdatePerformanceReviewInput,
   UpdateProjectInput,
   UpdateRoleInput,
+  UpdateSalaryInput,
   UpdateSettingsInput,
+  UpdateSubscriptionInput,
   TranslationResult,
   UpdateCheck,
   UpdateTaskInput,
+  SecurityEventKind,
   YoutubeTestResult,
   YoutubeUpdate,
 } from './types';
@@ -98,6 +123,52 @@ interface AppActions {
   deleteNote: (id: string) => Promise<boolean>;
   createFinance: (input: CreateFinanceInput) => Promise<boolean>;
   deleteFinance: (id: string) => Promise<boolean>;
+  createSalary: (input: CreateSalaryInput) => Promise<boolean>;
+  updateSalary: (input: UpdateSalaryInput) => Promise<boolean>;
+  deleteSalary: (id: string) => Promise<boolean>;
+  createInvoice: (input: CreateInvoiceInput) => Promise<boolean>;
+  updateInvoice: (input: UpdateInvoiceInput) => Promise<boolean>;
+  deleteInvoice: (id: string) => Promise<boolean>;
+  createCustomerPayment: (input: CreateCustomerPaymentInput) => Promise<boolean>;
+  updateCustomerPayment: (input: UpdateCustomerPaymentInput) => Promise<boolean>;
+  deleteCustomerPayment: (id: string) => Promise<boolean>;
+  createSubscription: (input: CreateSubscriptionInput) => Promise<boolean>;
+  updateSubscription: (input: UpdateSubscriptionInput) => Promise<boolean>;
+  deleteSubscription: (id: string) => Promise<boolean>;
+  createChatThread: (input: CreateChatThreadInput) => Promise<boolean>;
+  deleteChatThread: (id: string) => Promise<boolean>;
+  sendChatMessage: (input: CreateChatMessageInput) => Promise<boolean>;
+  deleteChatMessage: (id: string) => Promise<boolean>;
+  createAnnouncement: (input: CreateAnnouncementInput) => Promise<boolean>;
+  updateAnnouncement: (input: UpdateAnnouncementInput) => Promise<boolean>;
+  deleteAnnouncement: (id: string) => Promise<boolean>;
+  createMeeting: (input: CreateMeetingInput) => Promise<boolean>;
+  updateMeeting: (input: UpdateMeetingInput) => Promise<boolean>;
+  deleteMeeting: (id: string) => Promise<boolean>;
+  markNotificationsRead: (ids: string[]) => Promise<boolean>;
+  createClient: (input: CreateClientInput) => Promise<boolean>;
+  updateClient: (input: UpdateClientInput) => Promise<boolean>;
+  deleteClient: (id: string) => Promise<boolean>;
+  createContract: (input: CreateContractInput) => Promise<boolean>;
+  updateContract: (input: UpdateContractInput) => Promise<boolean>;
+  deleteContract: (id: string) => Promise<boolean>;
+  createDocument: (input: CreateDocumentInput) => Promise<boolean>;
+  updateDocument: (input: UpdateDocumentInput) => Promise<boolean>;
+  deleteDocument: (id: string) => Promise<boolean>;
+  createBug: (input: CreateBugInput) => Promise<boolean>;
+  updateBug: (input: UpdateBugInput) => Promise<boolean>;
+  deleteBug: (id: string) => Promise<boolean>;
+  createAutomationRule: (input: CreateAutomationRuleInput) => Promise<boolean>;
+  updateAutomationRule: (input: UpdateAutomationRuleInput) => Promise<boolean>;
+  deleteAutomationRule: (id: string) => Promise<boolean>;
+  runAutomationRule: (id: string) => Promise<boolean>;
+  logSecurityEvent: (input: {
+    kind: SecurityEventKind;
+    actor?: string;
+    detail: string;
+    companyId?: string | null;
+  }) => Promise<boolean>;
+  clearSecurityEvents: () => Promise<boolean>;
   createEmployee: (input: CreateEmployeeInput) => Promise<boolean>;
   updateEmployee: (input: UpdateEmployeeInput) => Promise<boolean>;
   deleteEmployee: (id: string) => Promise<boolean>;
@@ -119,6 +190,7 @@ interface AppActions {
   decideApproval: (
     id: string,
     status: Exclude<ApprovalStatus, 'pending'>,
+    decision?: { decidedBy?: string; decisionNote?: string },
   ) => Promise<boolean>;
   updateSettings: (input: UpdateSettingsInput) => Promise<boolean>;
   addYoutubeKey: (label: string, key: string) => Promise<boolean>;
@@ -426,6 +498,96 @@ export function AppProvider({ children }: { children: ReactNode }) {
       deleteNote: (id) => runMutation(() => api().note.remove(id), 'Not silindi.'),
       createFinance: (input) => runMutation(() => api().finance.create(input), 'Kayıt eklendi.'),
       deleteFinance: (id) => runMutation(() => api().finance.remove(id), 'Kayıt silindi.'),
+      createSalary: (input) =>
+        runMutation(() => api().salary.create(input), 'Maaş kaydı eklendi'),
+      updateSalary: (input) =>
+        runMutation(() => api().salary.update(input), 'Maaş kaydı güncellendi'),
+      deleteSalary: (id) => runMutation(() => api().salary.remove(id), 'Maaş kaydı silindi'),
+      createInvoice: (input) =>
+        runMutation(() => api().invoice.create(input), 'Fatura oluşturuldu'),
+      updateInvoice: (input) =>
+        runMutation(() => api().invoice.update(input), 'Fatura güncellendi'),
+      deleteInvoice: (id) => runMutation(() => api().invoice.remove(id), 'Fatura silindi'),
+      createCustomerPayment: (input) =>
+        runMutation(() => api().customerPayment.create(input), 'Ödeme kaydedildi'),
+      updateCustomerPayment: (input) =>
+        runMutation(() => api().customerPayment.update(input), 'Ödeme güncellendi'),
+      deleteCustomerPayment: (id) =>
+        runMutation(() => api().customerPayment.remove(id), 'Ödeme silindi'),
+      createSubscription: (input) =>
+        runMutation(() => api().subscription.create(input), 'Abonelik eklendi'),
+      updateSubscription: (input) =>
+        runMutation(() => api().subscription.update(input), 'Abonelik güncellendi'),
+      deleteSubscription: (id) =>
+        runMutation(() => api().subscription.remove(id), 'Abonelik silindi'),
+      createChatThread: (input) =>
+        runMutation(() => api().chat.createThread(input), 'Sohbet açıldı'),
+      deleteChatThread: (id) =>
+        runMutation(() => api().chat.removeThread(id), 'Sohbet silindi'),
+      sendChatMessage: (input) =>
+        runMutation(() => api().chat.sendMessage(input), 'Mesaj kaydedildi'),
+      deleteChatMessage: (id) =>
+        runMutation(() => api().chat.removeMessage(id), 'Mesaj silindi'),
+      createAnnouncement: (input) =>
+        runMutation(() => api().announcement.create(input), 'Duyuru oluşturuldu'),
+      updateAnnouncement: (input) =>
+        runMutation(() => api().announcement.update(input), 'Duyuru güncellendi'),
+      deleteAnnouncement: (id) =>
+        runMutation(() => api().announcement.remove(id), 'Duyuru silindi'),
+      createMeeting: (input) =>
+        runMutation(() => api().meeting.create(input), 'Toplantı planlandı'),
+      updateMeeting: (input) =>
+        runMutation(() => api().meeting.update(input), 'Toplantı güncellendi'),
+      deleteMeeting: (id) =>
+        runMutation(() => api().meeting.remove(id), 'Toplantı silindi'),
+      markNotificationsRead: (ids) =>
+        runMutation(() => api().notification.markRead(ids)),
+      createClient: (input) =>
+        runMutation(() => api().client.create(input), 'Müşteri eklendi'),
+      updateClient: (input) =>
+        runMutation(() => api().client.update(input), 'Müşteri güncellendi'),
+      deleteClient: (id) => runMutation(() => api().client.remove(id), 'Müşteri silindi'),
+      createContract: (input) =>
+        runMutation(() => api().contract.create(input), 'Sözleşme eklendi'),
+      updateContract: (input) =>
+        runMutation(() => api().contract.update(input), 'Sözleşme güncellendi'),
+      deleteContract: (id) => runMutation(() => api().contract.remove(id), 'Sözleşme silindi'),
+      createDocument: (input) =>
+        runMutation(() => api().document.create(input), 'Belge kaydedildi'),
+      updateDocument: (input) =>
+        runMutation(() => api().document.update(input), 'Belge güncellendi'),
+      deleteDocument: (id) => runMutation(() => api().document.remove(id), 'Belge silindi'),
+      createBug: (input) => runMutation(() => api().bug.create(input), 'Hata kaydı açıldı'),
+      updateBug: (input) => runMutation(() => api().bug.update(input), 'Hata kaydı güncellendi'),
+      deleteBug: (id) => runMutation(() => api().bug.remove(id), 'Hata kaydı silindi'),
+      createAutomationRule: (input) =>
+        runMutation(() => api().automation.create(input), 'Otomasyon kuralı oluşturuldu'),
+      updateAutomationRule: (input) =>
+        runMutation(() => api().automation.update(input), 'Otomasyon kuralı güncellendi'),
+      deleteAutomationRule: (id) =>
+        runMutation(() => api().automation.remove(id), 'Otomasyon kuralı silindi'),
+      runAutomationRule: (id) =>
+        runMutation(() => api().automation.run(id), 'Otomasyon çalıştırıldı; görev oluşturuldu'),
+      logSecurityEvent: async (input) => {
+        try {
+          const next = await api().security.log(input);
+          setData(next);
+          return true;
+        } catch (err) {
+          toast('error', errorMessage(err));
+          return false;
+        }
+      },
+      clearSecurityEvents: async () => {
+        try {
+          const next = await api().security.clear();
+          setData(next);
+          return true;
+        } catch (err) {
+          toast('error', errorMessage(err));
+          return false;
+        }
+      },
       createEmployee: (input) =>
         runMutation(() => api().employee.create(input), 'Çalışan eklendi'),
       updateEmployee: (input) =>
@@ -456,9 +618,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateApproval: (input) =>
         runMutation(() => api().approval.update(input), 'Onay talebi güncellendi'),
       deleteApproval: (id) => runMutation(() => api().approval.remove(id), 'Onay talebi silindi'),
-      decideApproval: (id, status) =>
+      decideApproval: (id, status, decision) =>
         runMutation(
-          () => api().approval.decide(id, status),
+          () => api().approval.decide(id, status, decision),
           status === 'approved' ? 'Talep onaylandı' : 'Talep reddedildi',
         ),
       updateSettings: (input) => runMutation(() => api().settings.update(input)),

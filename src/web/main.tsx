@@ -9,6 +9,8 @@ import { applyReduceMotion, applyTheme, storedReduceMotion, storedTheme } from '
 import { IS_TRAY } from '../lib/runtime';
 import { registerServiceWorker } from './pwa';
 import '../styles.css';
+import '../styles-communication.css';
+import '../styles-admin.css';
 import '../styles-web.css';
 
 installBrowserApi();

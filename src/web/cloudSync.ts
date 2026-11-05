@@ -332,7 +332,21 @@ function localIsEmpty(state: AppData): boolean {
     state.approvals.length === 0 &&
     state.departments.length === 0 &&
     state.roles.length === 0 &&
-    state.performanceReviews.length === 0
+    state.performanceReviews.length === 0 &&
+    state.salaries.length === 0 &&
+    state.invoices.length === 0 &&
+    state.customerPayments.length === 0 &&
+    state.subscriptions.length === 0 &&
+    state.chatThreads.length === 0 &&
+    state.chatMessages.length === 0 &&
+    state.announcements.length === 0 &&
+    state.meetings.length === 0 &&
+    state.clients.length === 0 &&
+    state.contracts.length === 0 &&
+    state.documents.length === 0 &&
+    state.bugs.length === 0 &&
+    state.automationRules.length === 0 &&
+    state.securityEvents.length === 0
   );
 }
 

@@ -18,6 +18,7 @@ const musicLibrary = require('./music.cjs');
 const translate = require('./translate.cjs');
 const updates = require('./updates.cjs');
 const assistant = require('./assistant.cjs');
+const { registerLocalData } = require('./localData.cjs');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -603,6 +604,8 @@ function current() {
   return toRendererState(store.get());
 }
 
+registerLocalData({ handle, store, current, findCompany, validId });
+
 function text(value, max, field) {
   if (typeof value !== 'string' || !value.trim()) {
     throw new Error(`${field} boş olamaz.`);
@@ -865,6 +868,30 @@ function registerIpc() {
     state.tasks = state.tasks.filter((t) => t.companyId !== id);
     state.notes = state.notes.filter((n) => n.companyId !== id);
     state.finance = state.finance.filter((f) => f.companyId !== id);
+    state.salaries = state.salaries.filter((item) => item.companyId !== id);
+    state.invoices = state.invoices.filter((item) => item.companyId !== id);
+    state.customerPayments = state.customerPayments.filter((item) => item.companyId !== id);
+    state.subscriptions = state.subscriptions.filter((item) => item.companyId !== id);
+    const chatThreadIds = new Set(
+      state.chatThreads.filter((thread) => thread.companyId === id).map((thread) => thread.id),
+    );
+    state.chatThreads = state.chatThreads.filter((thread) => thread.companyId !== id);
+    state.chatMessages = state.chatMessages.filter(
+      (message) => !chatThreadIds.has(message.threadId),
+    );
+    state.announcements = state.announcements.filter((item) => item.companyId !== id);
+    state.meetings = state.meetings.filter((item) => item.companyId !== id);
+    state.clients = state.clients.filter((item) => item.companyId !== id);
+    state.contracts = state.contracts.filter((item) => item.companyId !== id);
+    state.documents = state.documents.filter((item) => item.companyId !== id);
+    state.bugs = state.bugs.filter((item) => item.companyId !== id);
+    state.automationRules = state.automationRules.filter((item) => item.companyId !== id);
+    state.employees = state.employees.filter((item) => item.companyId !== id);
+    state.projects = state.projects.filter((item) => item.companyId !== id);
+    state.approvals = state.approvals.filter((item) => item.companyId !== id);
+    state.departments = state.departments.filter((item) => item.companyId !== id);
+    state.roles = state.roles.filter((item) => item.companyId !== id);
+    state.performanceReviews = state.performanceReviews.filter((item) => item.companyId !== id);
     state.companies = state.companies.filter((c) => c.id !== id);
     store.save();
     return current();
@@ -966,9 +993,21 @@ function registerIpc() {
       priority: ['low', 'med', 'high'].includes(payload.priority) ? payload.priority : 'med',
       due: payload.due ? validDate(payload.due) : null,
       done: false,
+      assigneeId: null,
       createdAt: Date.now(),
+      completedAt: null,
     };
     if (task.companyId) findCompany(task.companyId);
+    if (payload.assigneeId) {
+      const assignee = store
+        .get()
+        .employees.find(
+          (employee) =>
+            employee.id === payload.assigneeId && employee.companyId === task.companyId,
+        );
+      if (!assignee) throw new Error('Çalışan bulunamadı.');
+      task.assigneeId = assignee.id;
+    }
     store.get().tasks.unshift(task);
     store.save();
     return current();
@@ -993,7 +1032,24 @@ function registerIpc() {
       task.priority = payload.priority;
     }
     if (payload.due !== undefined) task.due = payload.due ? validDate(payload.due) : null;
-    if (payload.done !== undefined) task.done = Boolean(payload.done);
+    if (payload.assigneeId !== undefined) {
+      if (payload.assigneeId) {
+        const assignee = store
+          .get()
+          .employees.find(
+            (employee) =>
+              employee.id === payload.assigneeId && employee.companyId === task.companyId,
+          );
+        if (!assignee) throw new Error('Çalışan bulunamadı.');
+        task.assigneeId = assignee.id;
+      } else {
+        task.assigneeId = null;
+      }
+    }
+    if (payload.done !== undefined) {
+      task.done = Boolean(payload.done);
+      task.completedAt = task.done ? task.completedAt ?? Date.now() : null;
+    }
     store.save();
     return current();
   });

@@ -8,6 +8,9 @@ export type Page =
   | 'mail'
   | 'finance'
   | 'operations'
+  | 'communication'
+  | 'business'
+  | 'admin'
   | 'tasks'
   | 'tools'
   | 'connections'
@@ -33,6 +36,9 @@ export const PAGE_LABEL: Record<Page, TranslationKey> = {
   mail: 'Posta',
   finance: 'Finans',
   operations: 'Operasyon',
+  communication: 'İletişim',
+  business: 'İş merkezi',
+  admin: 'Yönetim',
   tasks: 'Görev & Notlar',
   tools: 'Hesap & Kur',
   connections: 'Bağlantılar',

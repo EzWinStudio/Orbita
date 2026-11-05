@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Activity,
   Bot,
+  BriefcaseBusiness,
   Building2,
   Calculator,
   FolderKanban,
@@ -11,9 +12,11 @@ import {
   ListChecks,
   LockKeyhole,
   Mail,
+  MessagesSquare,
   Music4,
   Plus,
   Settings,
+  ShieldCheck,
   Sparkles,
   UserRound,
   Wallet,
@@ -24,6 +27,7 @@ import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n/core';
 import type { Page } from '../nav';
 import { formatClock, formatLongDate } from '../lib/format';
+import { buildInbox, unreadInbox } from '../lib/communication';
 
 interface SidebarProps {
   page: Page;
@@ -41,6 +45,9 @@ const WORK_ITEMS: { page: Page; label: TranslationKey; icon: typeof LayoutDashbo
   { page: 'mail', label: 'Posta', icon: Mail },
   { page: 'finance', label: 'Finans', icon: Wallet },
   { page: 'operations', label: 'Operasyon', icon: FolderKanban },
+  { page: 'communication', label: 'İletişim', icon: MessagesSquare },
+  { page: 'business', label: 'İş merkezi', icon: BriefcaseBusiness },
+  { page: 'admin', label: 'Yönetim', icon: ShieldCheck },
   { page: 'tasks', label: 'Görev & Notlar', icon: ListChecks },
   { page: 'tools', label: 'Hesap & Kur', icon: Calculator },
 ];
@@ -72,6 +79,10 @@ export function Sidebar({ page, companyId, navigate }: SidebarProps) {
 
   const openTaskCount = data.tasks.filter((task) => !task.done).length;
   const pendingApprovalCount = data.approvals.filter((approval) => approval.status === 'pending').length;
+  const unreadNotificationCount = unreadInbox(
+    buildInbox(data),
+    data.notificationReads,
+  ).length;
   const offlineCount = Object.values(data.statuses).filter(
     (status) => status.state === 'offline',
   ).length;
@@ -139,6 +150,14 @@ export function Sidebar({ page, companyId, navigate }: SidebarProps) {
                     title={t('{count} bekleyen onay', { count: pendingApprovalCount })}
                   >
                     {pendingApprovalCount}
+                  </span>
+                ) : null}
+                {item.page === 'communication' && unreadNotificationCount > 0 ? (
+                  <span
+                    className="nav-badge nav-badge-warning"
+                    title={t('{count} okunmamış bildirim', { count: unreadNotificationCount })}
+                  >
+                    {unreadNotificationCount}
                   </span>
                 ) : null}
               </button>

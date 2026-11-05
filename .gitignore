@@ -9,3 +9,5 @@ build/icon.png
 
 release-artifacts/
 build-output/
+
+*.tsbuildinfo

@@ -6,6 +6,7 @@ import {
   Bot,
   Building2,
   Cable,
+  CalendarClock,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -13,9 +14,12 @@ import {
   FolderKanban,
   Globe2,
   ListChecks,
+  Megaphone,
   MessageCircle,
   Plus,
+  ReceiptText,
   RefreshCw,
+  Repeat,
   Server,
   ShieldCheck,
   Star,
@@ -46,6 +50,7 @@ import { compactNumber } from '../lib/youtube';
 import type { Page } from '../nav';
 import type { Approval, Asset, ServiceState, Task } from '../types';
 import { buildActivity, type ActivityKind } from '../lib/activity';
+import { buildFinanceRows, rowsInMonth, totalsOf } from '../lib/finance';
 import {
   currentMonthKey,
   formatMoney,
@@ -80,6 +85,18 @@ function activityIcon(kind: ActivityKind) {
       return ArrowDownLeft;
     case 'expense':
       return ArrowUpRight;
+    case 'salary':
+      return Wallet;
+    case 'invoice':
+      return ReceiptText;
+    case 'payment':
+      return ArrowDownLeft;
+    case 'subscription':
+      return Repeat;
+    case 'announcement':
+      return Megaphone;
+    case 'meeting':
+      return CalendarClock;
     case 'company':
       return Building2;
     case 'service':
@@ -154,27 +171,39 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
   ).length;
   const youtubeEvents = data.youtubeEvents.slice(0, 6);
 
-  const monthEntries = data.finance.filter((entry) => entry.date.startsWith(monthKey));
-  const income = monthEntries.filter((entry) => entry.kind === 'income').reduce((sum, entry) => sum + entry.amount, 0);
-  const expense = monthEntries.filter((entry) => entry.kind === 'expense').reduce((sum, entry) => sum + entry.amount, 0);
-  const net = income - expense;
+  const financeRows = useMemo(
+    () =>
+      buildFinanceRows({
+        finance: data.finance,
+        salaries: data.salaries,
+        invoices: data.invoices,
+        customerPayments: data.customerPayments,
+      }),
+    [data.finance, data.salaries, data.invoices, data.customerPayments],
+  );
+  const monthRows = useMemo(() => rowsInMonth(financeRows, monthKey), [financeRows, monthKey]);
+  const monthTotals = totalsOf(monthRows);
+  const income = monthTotals.income;
+  const expense = monthTotals.expense;
+  const net = monthTotals.net;
+  const allTotals = totalsOf(financeRows);
 
   const monthByCompany = useMemo(
     () =>
       data.companies
         .map((company) => {
-          const entries = monthEntries.filter((entry) => entry.companyId === company.id);
-          const companyIncome = entries
-            .filter((entry) => entry.kind === 'income')
-            .reduce((sum, entry) => sum + entry.amount, 0);
-          const companyExpense = entries
-            .filter((entry) => entry.kind === 'expense')
-            .reduce((sum, entry) => sum + entry.amount, 0);
-          return { company, net: companyIncome - companyExpense, count: entries.length };
+          const rows = monthRows.filter((row) => row.companyId === company.id);
+          const companyIncome = rows
+            .filter((row) => row.kind === 'income')
+            .reduce((sum, row) => sum + row.amount, 0);
+          const companyExpense = rows
+            .filter((row) => row.kind === 'expense')
+            .reduce((sum, row) => sum + row.amount, 0);
+          return { company, net: companyIncome - companyExpense, count: rows.length };
         })
         .filter((row) => row.count > 0)
         .sort((a, b) => b.net - a.net),
-    [data.companies, monthEntries],
+    [data.companies, monthRows],
   );
 
   const months = useMemo(() => {
@@ -184,17 +213,20 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
       const date = new Date(year, month - 1 - i, 1);
       keys.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
     }
-    return keys.map((key) => ({
-      key,
-      label: monthLabel(key, 'short').toLocaleUpperCase(locale),
-      income: data.finance
-        .filter((entry) => entry.kind === 'income' && entry.date.startsWith(key))
-        .reduce((sum, entry) => sum + entry.amount, 0),
-      expense: data.finance
-        .filter((entry) => entry.kind === 'expense' && entry.date.startsWith(key))
-        .reduce((sum, entry) => sum + entry.amount, 0),
-    }));
-  }, [data.finance, monthKey, locale]);
+    return keys.map((key) => {
+      const rows = financeRows.filter((row) => row.date.startsWith(key));
+      return {
+        key,
+        label: monthLabel(key, 'short').toLocaleUpperCase(locale),
+        income: rows
+          .filter((row) => row.kind === 'income')
+          .reduce((sum, row) => sum + row.amount, 0),
+        expense: rows
+          .filter((row) => row.kind === 'expense')
+          .reduce((sum, row) => sum + row.amount, 0),
+      };
+    });
+  }, [financeRows, monthKey, locale]);
 
   const openTasks = useMemo(
     () =>
@@ -215,12 +247,9 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
     (project) => project.status === 'completed',
   ).length;
   const completedTaskCount = data.tasks.filter((task) => task.done).length;
-  const totalIncome = data.finance
-    .filter((entry) => entry.kind === 'income')
-    .reduce((sum, entry) => sum + entry.amount, 0);
-  const totalExpense = data.finance
-    .filter((entry) => entry.kind === 'expense')
-    .reduce((sum, entry) => sum + entry.amount, 0);
+  const totalIncome = allTotals.income;
+  const totalExpense = allTotals.expense;
+  const totalFinanceCount = allTotals.count;
   const activeEmployeeCount = data.employees.filter(
     (employee) => employee.status === 'active',
   ).length;
@@ -242,22 +271,23 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
     for (let offset = 6; offset >= 0; offset -= 1) {
       const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
       const key = dayKey(date);
+      const rows = financeRows.filter((row) => row.date === key);
       days.push({
         key,
         label: formatter.format(date).toLocaleUpperCase(locale),
-        income: data.finance
-          .filter((entry) => entry.kind === 'income' && entry.date === key)
-          .reduce((sum, entry) => sum + entry.amount, 0),
-        expense: data.finance
-          .filter((entry) => entry.kind === 'expense' && entry.date === key)
-          .reduce((sum, entry) => sum + entry.amount, 0),
+        income: rows
+          .filter((row) => row.kind === 'income')
+          .reduce((sum, row) => sum + row.amount, 0),
+        expense: rows
+          .filter((row) => row.kind === 'expense')
+          .reduce((sum, row) => sum + row.amount, 0),
         tasks: data.tasks.filter(
           (task) => task.done && task.completedAt && dayKey(new Date(task.completedAt)) === key,
         ).length,
       });
     }
     return days;
-  }, [data.finance, data.tasks, locale]);
+  }, [financeRows, data.tasks, locale]);
 
   const weekIncome = weekDays.reduce((sum, day) => sum + day.income, 0);
   const weekExpense = weekDays.reduce((sum, day) => sum + day.expense, 0);
@@ -546,9 +576,9 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
         )}
         <KpiCard
           label={t('Bu ay net')}
-          value={monthEntries.length ? formatMoney(net, currency) : '—'}
+          value={monthRows.length ? formatMoney(net, currency) : '—'}
           hint={
-            monthEntries.length
+            monthRows.length
               ? t('{income} gelir · {expense} gider', {
                   income: formatMoney(income, currency),
                   expense: formatMoney(expense, currency),
@@ -556,7 +586,7 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
               : t('Bu ay için kayıt yok')
           }
           icon={<Wallet size={16} />}
-          tone={monthEntries.length ? (net >= 0 ? 'mint' : 'danger') : 'default'}
+          tone={monthRows.length ? (net >= 0 ? 'mint' : 'danger') : 'default'}
           footer={<span className="mini-mono">{monthLabel(monthKey)}</span>}
         />
         <KpiCard
@@ -611,10 +641,10 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
             <span>{t('Toplam gelir')}</span>
             <ArrowDownLeft size={15} />
           </span>
-          <strong>{data.finance.length ? formatMoney(totalIncome, currency) : '—'}</strong>
+          <strong>{totalFinanceCount ? formatMoney(totalIncome, currency) : '—'}</strong>
           <small>
             {t('{count} gelir kaydı', {
-              count: data.finance.filter((entry) => entry.kind === 'income').length,
+              count: financeRows.filter((row) => row.kind === 'income').length,
             })}
           </small>
         </button>
@@ -627,10 +657,10 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
             <span>{t('Toplam gider')}</span>
             <ArrowUpRight size={15} />
           </span>
-          <strong>{data.finance.length ? formatMoney(totalExpense, currency) : '—'}</strong>
+          <strong>{totalFinanceCount ? formatMoney(totalExpense, currency) : '—'}</strong>
           <small>
             {t('{count} gider kaydı', {
-              count: data.finance.filter((entry) => entry.kind === 'expense').length,
+              count: financeRows.filter((row) => row.kind === 'expense').length,
             })}
           </small>
         </button>
@@ -1006,7 +1036,7 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
             <div>
               <span className="finance-label">{t('Net')}</span>
               <strong className={`finance-net ${net < 0 ? 'negative' : ''}`}>
-                {monthEntries.length ? formatMoney(net, currency) : '—'}
+                {monthRows.length ? formatMoney(net, currency) : '—'}
               </strong>
             </div>
             <div className="finance-split">

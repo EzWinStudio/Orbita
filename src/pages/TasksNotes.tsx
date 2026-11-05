@@ -187,6 +187,11 @@ export function TasksNotes({ intent, onIntentHandled }: TasksNotesProps) {
           <span className="task-meta">
             <span className={`priority-dot priority-dot-${task.priority}`} />
             <CompanyChip company={company} />
+            {task.assigneeId ? (
+              <span className="task-assignee">
+                {data.employees.find((employee) => employee.id === task.assigneeId)?.name ?? t('Atanmadı')}
+              </span>
+            ) : null}
             {due ? <span className={`due due-${due.tone}`}>{due.text}</span> : <span className="due due-none">{t('Tarihsiz')}</span>}
           </span>
         </button>

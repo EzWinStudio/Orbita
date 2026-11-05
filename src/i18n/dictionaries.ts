@@ -9,6 +9,9 @@ import { modalsRows } from './dicts/modals';
 import { youtubeRows } from './dicts/youtube';
 import { studioRows } from './dicts/studio';
 import { operationsRows } from './dicts/operations';
+import { financeRows } from './dicts/finance';
+import { communicationRows } from './dicts/communication';
+import { enterpriseRows } from './dicts/enterprise';
 import { webRows } from './dicts/web';
 
 type TranslationKey = keyof typeof en;
@@ -24,6 +27,9 @@ const rows: readonly TranslationRow[] = [
   ...youtubeRows,
   ...studioRows,
   ...operationsRows,
+  ...financeRows,
+  ...communicationRows,
+  ...enterpriseRows,
   ...webRows,
 ];
 
