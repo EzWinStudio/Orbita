@@ -1,9 +1,9 @@
 import type { AppData, Settings } from '../types';
 import { applySyncedState, onBrowserSave, readBrowserState } from './browserApi';
 import { scopedStorageKey } from './workspaceScope';
-import { PRODUCT_NAME } from '../lib/product';
 
-export const SYNC_ORIGIN = 'https://ezwin-hub-sync-qa7ckgs962s.qoder.website';
+const SYNC_API = 'https://orbita.wasmer.app/api/sync';
+const SYNC_TIMEOUT_MS = 25_000;
 const CONFIG_KEY = 'ezwin.hub.web.sync.v1';
 const BACKUP_KEY = 'ezwin.hub.web.sync.backup.v1';
 const CODE_PREFIX = 'ORBITA';
@@ -113,14 +113,6 @@ function createDeviceId(): string {
     return crypto.randomUUID();
   } catch {
     return `device-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-  }
-}
-
-function uid(): string {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
   }
 }
 
@@ -362,99 +354,42 @@ function backupLocal(state: AppData): void {
   }
 }
 
-interface FrameReply {
+interface ApiReply {
   status: number;
   body: unknown;
 }
 
-const framePending = new Map<
-  string,
-  { resolve: (reply: FrameReply) => void; reject: (error: Error) => void; timer: number }
->();
-let syncFrame: HTMLIFrameElement | null = null;
-let syncFrameReady = false;
-let framePromise: Promise<void> | null = null;
-
-function onFrameMessage(event: MessageEvent): void {
-  if (event.origin !== SYNC_ORIGIN) return;
-  const data = event.data as
-    | { type?: string; requestId?: string; status?: number; body?: unknown }
-    | null;
-  if (!data) return;
-  if (data.type === 'ezwin-sync-ready') {
-    syncFrameReady = true;
-    return;
-  }
-  if (data.type !== 'ezwin-sync-result' || typeof data.requestId !== 'string') return;
-  const pending = framePending.get(data.requestId);
-  if (!pending) return;
-  framePending.delete(data.requestId);
-  window.clearTimeout(pending.timer);
-  pending.resolve({ status: Number(data.status) || 0, body: data.body });
-}
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('message', onFrameMessage);
-}
-
-function ensureFrame(): Promise<void> {
-  if (syncFrame && syncFrameReady) return Promise.resolve();
-  if (framePromise) return framePromise;
-  framePromise = new Promise((resolve, reject) => {
-    const frame = document.createElement('iframe');
-    frame.src = `${SYNC_ORIGIN}/?embed=1`;
-    frame.title = `${PRODUCT_NAME} eşitleme`;
-    frame.setAttribute('aria-hidden', 'true');
-    frame.tabIndex = -1;
-    frame.style.position = 'fixed';
-    frame.style.width = '0';
-    frame.style.height = '0';
-    frame.style.opacity = '0';
-    frame.style.pointerEvents = 'none';
-    frame.style.border = '0';
-    const timer = window.setTimeout(() => {
-      frame.remove();
-      syncFrame = null;
-      syncFrameReady = false;
-      framePromise = null;
-      reject(new Error('sync_unavailable'));
-    }, 15_000);
-    const check = window.setInterval(() => {
-      if (!syncFrameReady) return;
-      window.clearInterval(check);
-      window.clearTimeout(timer);
-      syncFrame = frame;
-      resolve();
-    }, 80);
-    frame.addEventListener('error', () => {
-      window.clearInterval(check);
-      window.clearTimeout(timer);
-      frame.remove();
-      syncFrame = null;
-      syncFrameReady = false;
-      framePromise = null;
-      reject(new Error('sync_unavailable'));
+async function apiRequest(
+  action: 'get' | 'put',
+  payload: Record<string, unknown>,
+): Promise<ApiReply> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS);
+  try {
+    if (action === 'get') {
+      const channel = encodeURIComponent(String(payload.channel ?? ''));
+      const response = await fetch(`${SYNC_API}?channel=${channel}`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      return { status: response.status, body: await response.json().catch(() => null) };
+    }
+    const response = await fetch(SYNC_API, {
+      method: 'PUT',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
     });
-    document.body.appendChild(frame);
-  });
-  return framePromise;
-}
-
-async function frameRequest(action: 'get' | 'put', payload: Record<string, unknown>): Promise<FrameReply> {
-  await ensureFrame();
-  if (!syncFrame?.contentWindow) throw new Error('sync_unavailable');
-  const requestId = uid();
-  return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      framePending.delete(requestId);
-      reject(new Error('sync_timeout'));
-    }, 25_000);
-    framePending.set(requestId, { resolve, reject, timer });
-    syncFrame?.contentWindow?.postMessage(
-      { type: 'ezwin-sync', requestId, action, ...payload },
-      SYNC_ORIGIN,
-    );
-  });
+    return { status: response.status, body: await response.json().catch(() => null) };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('sync_timeout');
+    }
+    throw new Error('sync_unavailable');
+  } finally {
+    window.clearTimeout(timer);
+  }
 }
 
 async function getRemote(config: SyncConfig): Promise<{
@@ -463,7 +398,7 @@ async function getRemote(config: SyncConfig): Promise<{
   version: number;
   updatedAt: number;
 }> {
-  const reply = await frameRequest('get', { channel: config.channelId });
+  const reply = await apiRequest('get', { channel: config.channelId });
   const body = reply.body as
     | { ok?: boolean; found?: boolean; payload?: string; version?: number; updatedAt?: number }
     | null;
@@ -508,7 +443,7 @@ async function pushLocal(
 ): Promise<SyncResult> {
   const snapshot = snapshotOf(local);
   const payload = await encryptSnapshot(snapshot, config.channelId);
-  const reply = await frameRequest('put', {
+  const reply = await apiRequest('put', {
     channel: config.channelId,
     payload,
     expectedVersion,

@@ -12,11 +12,19 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.utils import safe_join
 
 import orbita_auth as auth
+import orbita_sync as sync
 
 PUBLIC_DIR = os.path.abspath(os.environ.get('ORBITA_PUBLIC_DIR') or os.path.join(os.path.dirname(__file__), '..', 'public'))
 COOKIE_NAME = 'orbita_session'
 COOKIE_SECURE = os.environ.get('ORBITA_COOKIE_SECURE', '1') != '0'
-APP_VERSION = '2.6.2'
+APP_VERSION = '2.6.3'
+SYNC_ORIGINS = {
+    'https://orbita.wasmer.app',
+    'https://ezwin.local',
+    'http://localhost:5174',
+    'http://127.0.0.1:4173',
+    'http://127.0.0.1:5174',
+}
 GITHUB_RELEASES = 'https://github.com/EzWinStudio/Orbita/releases/download'
 DOWNLOAD_PATTERN = re.compile(r'^Orbita-(Setup|Portable)-(\d+\.\d+\.\d+)\.exe$')
 
@@ -275,6 +283,53 @@ def profile():
     return jsonify({'ok': True, 'account': result['account']})
 
 
+@app.route('/api/sync', methods=['GET', 'PUT', 'OPTIONS'])
+def sync_api():
+    if request.method == 'OPTIONS':
+        return app.make_response(('', 204))
+    try:
+        db = get_db()
+        sync.ensure_schema(db)
+    except Exception:
+        return error_response('sync_unavailable', 503)
+
+    if request.method == 'GET':
+        channel = request.args.get('channel') or ''
+        if not sync.valid_channel(channel):
+            return error_response('invalid_channel', 400)
+        try:
+            return jsonify(sync.get_blob(db, channel))
+        except Exception:
+            return error_response('sync_unavailable', 503)
+
+    body, problem = read_json(max_bytes=sync.MAX_PAYLOAD + 20_000)
+    if problem:
+        return problem
+    channel = body.get('channel')
+    payload = body.get('payload')
+    expected_version = body.get('expectedVersion')
+    device_id = body.get('deviceId')
+    if not sync.valid_channel(channel):
+        return error_response('invalid_channel', 400)
+    if not isinstance(payload, str) or not payload or len(payload) > sync.MAX_PAYLOAD:
+        return error_response('invalid_payload', 422)
+    if (
+        isinstance(expected_version, bool)
+        or not isinstance(expected_version, int)
+        or expected_version < 0
+        or expected_version > 2_000_000_000
+    ):
+        return error_response('invalid_version', 400)
+    if device_id is not None and not isinstance(device_id, str):
+        return error_response('invalid_input', 400)
+    try:
+        result = sync.put_blob(db, channel, payload, expected_version, device_id or '')
+    except Exception:
+        return error_response('sync_unavailable', 503)
+    status = 200 if result.get('ok') else 409
+    return jsonify(result), status
+
+
 def is_immutable_asset(path):
     return path.startswith('assets/') or path.startswith('brand-icons/') or path.startswith('icons/')
 
@@ -323,6 +378,13 @@ def apply_headers(response):
     response.headers.setdefault('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
     if COOKIE_SECURE:
         response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    if request.path == '/api/sync':
+        origin = request.headers.get('Origin')
+        if origin in SYNC_ORIGINS:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Vary'] = 'Origin'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, PUT, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     if request.path.startswith('/api/'):
         response.headers['Cache-Control'] = 'no-store'
         response.headers['Pragma'] = 'no-cache'
