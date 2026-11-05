@@ -1579,7 +1579,13 @@
 
 @media (max-width: 640px) {
   .auth-topbar {
+    flex-wrap: wrap;
+    row-gap: 10px;
     padding: 16px 14px;
+  }
+
+  .auth-actions {
+    margin-left: auto;
   }
 
   .auth-main {

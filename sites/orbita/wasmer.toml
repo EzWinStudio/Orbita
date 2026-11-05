@@ -1,6 +1,6 @@
 [package]
 name = "ezwinstudio/orbita"
-version = "1.2.0"
+version = "1.2.1"
 description = "Orbita — company command center with database-backed sign-in"
 
 [dependencies]
