@@ -6,6 +6,7 @@ const {
   Menu,
   Notification,
   Tray,
+  clipboard,
   ipcMain,
   nativeImage,
   net,
@@ -16,6 +17,7 @@ const {
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const { once } = require('node:events');
 const { execFile, spawn } = require('node:child_process');
 
 const APP_NAME = 'Orbita';
@@ -54,6 +56,18 @@ let siteCheckRunning = false;
 let botCheckRunning = false;
 let updateCheckRunning = false;
 let pendingUpdate = null;
+let updateInfo = {
+  supported: false,
+  currentVersion: '',
+  latest: null,
+  available: false,
+  downloaded: false,
+  downloading: false,
+  progress: null,
+  error: null,
+  checkedAt: null,
+  notes: [],
+};
 let trayStatusPrimary = 'Arka plan hazırlanıyor…';
 let trayStatusSecondary = 'Henüz site kontrolü yapılmadı';
 let trayBackupStatus = 'Son yedek: —';
@@ -63,6 +77,7 @@ const defaultSettings = {
   notifications: true,
   hideHintShown: false,
   autoStartInitialized: false,
+  autoUpdateInstall: true,
   windowBounds: null,
 };
 
@@ -310,6 +325,10 @@ function rebuildTray() {
     {
       label: 'Çıkış',
       click: () => {
+        if (pendingUpdate && settings.autoUpdateInstall !== false) {
+          const result = installUpdate();
+          if (result.ok) return;
+        }
         quitting = true;
         app.quit();
       },
@@ -909,86 +928,194 @@ async function initializeAutoStart() {
   saveSettings();
 }
 
-async function downloadUpdate(release, version) {
+function updateView() {
+  return { ...updateInfo, currentVersion: app.getVersion(), supported: app.isPackaged };
+}
+
+function publishUpdate() {
+  updateInfo.currentVersion = app.getVersion();
+  updateInfo.supported = app.isPackaged;
+  sendHost({ kind: 'update-status', ...updateView() });
+}
+
+function releaseNotes(release) {
+  return String(release.body || '')
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .replace(/^#{1,6}\s+/, '')
+        .replace(/^[-*]\s+/, '')
+        .replace(/\*\*/g, '')
+        .trim(),
+    )
+    .filter((line) => line && !/^orbita\s+v?\d/i.test(line))
+    .slice(0, 6);
+}
+
+async function downloadUpdate(release, version, onProgress) {
   const installerName = `Orbita-Setup-${version}.exe`;
   const installerAsset = (release.assets || []).find((asset) => asset.name === installerName);
-  const checksumAsset = (release.assets || []).find((asset) => asset.name === `${installerName}.sha256`);
-  if (!installerAsset || !checksumAsset) return null;
+  const checksumAsset =
+    (release.assets || []).find((asset) => asset.name === `${installerName}.sha256`) ||
+    (release.assets || []).find((asset) => asset.name === `Orbita-Setup-${version}.sha256`);
+  if (!installerAsset || !checksumAsset) {
+    throw new Error(`Güncelleme paketi eksik (${installerName}).`);
+  }
   const checksumResponse = await fetch(checksumAsset.browser_download_url, {
     signal: AbortSignal.timeout(15000),
   });
-  if (!checksumResponse.ok) return null;
+  if (!checksumResponse.ok) throw new Error('Güncelleme doğrulama dosyası alınamadı.');
   const checksumText = await checksumResponse.text();
   const match = checksumText.match(/[a-f0-9]{64}/i);
-  if (!match) return null;
+  if (!match) throw new Error('Güncelleme doğrulama dosyası geçersiz.');
   const expected = match[0].toLowerCase();
   ensureDir(UPDATE_DIR);
   const target = path.join(UPDATE_DIR, installerName);
   if (fs.existsSync(target)) {
     const digest = crypto.createHash('sha256').update(fs.readFileSync(target)).digest('hex');
-    if (digest === expected) return { version, file: target };
+    if (digest === expected) {
+      onProgress?.(100);
+      return { version, file: target, size: fs.statSync(target).size };
+    }
+    fs.rmSync(target, { force: true });
   }
   const response = await fetch(installerAsset.browser_download_url, {
     signal: AbortSignal.timeout(10 * 60 * 1000),
     redirect: 'follow',
   });
-  if (!response.ok) return null;
-  const buffer = Buffer.from(await response.arrayBuffer());
-  if (buffer.length > 300 * 1024 * 1024) return null;
-  const digest = crypto.createHash('sha256').update(buffer).digest('hex');
-  if (digest !== expected) {
-    log('update checksum mismatch');
-    return null;
+  if (!response.ok || !response.body) {
+    throw new Error(`Güncelleme indirilemedi (${response.status}).`);
   }
+  const total = Number(response.headers.get('content-length')) || 0;
+  const hash = crypto.createHash('sha256');
   const temp = `${target}.part`;
-  fs.writeFileSync(temp, buffer);
-  fs.renameSync(temp, target);
-  return { version, file: target };
+  fs.rmSync(temp, { force: true });
+  const out = fs.createWriteStream(temp);
+  out.on('error', () => {});
+  let received = 0;
+  try {
+    for await (const chunk of response.body) {
+      const buffer = Buffer.from(chunk);
+      received += buffer.length;
+      if (received > 300 * 1024 * 1024) {
+        throw new Error('Güncelleme paketi beklenenden büyük.');
+      }
+      hash.update(buffer);
+      if (total > 0) onProgress?.(Math.min(99, Math.round((received / total) * 100)));
+      if (!out.write(buffer)) await once(out, 'drain');
+    }
+    out.end();
+    await once(out, 'finish');
+    const digest = hash.digest('hex');
+    if (digest !== expected) {
+      throw new Error('İndirilen güncelleme doğrulanamadı (SHA-256 uyuşmuyor).');
+    }
+    fs.renameSync(temp, target);
+    onProgress?.(100);
+    return { version, file: target, size: fs.statSync(target).size };
+  } catch (error) {
+    out.destroy();
+    fs.rmSync(temp, { force: true });
+    throw error;
+  }
 }
 
-async function checkForUpdates() {
-  if (!app.isPackaged || updateCheckRunning) return;
+async function checkForUpdates(options = {}) {
+  if (!app.isPackaged) {
+    updateInfo.supported = false;
+    updateInfo.currentVersion = app.getVersion();
+    if (options.manual) publishUpdate();
+    return updateView();
+  }
+  if (updateCheckRunning) return updateView();
   updateCheckRunning = true;
+  updateInfo.supported = true;
+  updateInfo.error = null;
+  let lastProgressPush = 0;
   try {
     const response = await fetch('https://api.github.com/repos/EzWinStudio/Orbita/releases/latest', {
       headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'Orbita/2.2' },
       signal: AbortSignal.timeout(12000),
     });
-    if (!response.ok) return;
+    if (!response.ok) {
+      throw new Error(`GitHub sürüm bilgisi alınamadı (${response.status}).`);
+    }
     const release = await response.json();
     const latest = String(release.tag_name || '').replace(/^v/i, '').trim();
-    if (!latest || compareVersions(latest, app.getVersion()) <= 0) {
+    if (!latest) throw new Error('Sürüm bilgisi bulunamadı.');
+    updateInfo.latest = latest;
+    updateInfo.notes = releaseNotes(release);
+    updateInfo.checkedAt = Date.now();
+    if (compareVersions(latest, app.getVersion()) <= 0) {
       pendingUpdate = null;
+      updateInfo.available = false;
+      updateInfo.downloaded = false;
+      updateInfo.downloading = false;
+      updateInfo.progress = null;
       rebuildTray();
-      return;
+      publishUpdate();
+      return updateView();
     }
-    const downloaded = await downloadUpdate(release, latest);
-    if (!downloaded) return;
+    updateInfo.available = true;
+    updateInfo.downloaded = false;
+    updateInfo.downloading = true;
+    updateInfo.progress = 0;
+    publishUpdate();
+    const downloaded = await downloadUpdate(release, latest, (percent) => {
+      updateInfo.progress = percent;
+      const now = Date.now();
+      if (now - lastProgressPush > 500) {
+        lastProgressPush = now;
+        publishUpdate();
+      }
+    });
     pendingUpdate = downloaded;
+    updateInfo.downloaded = true;
+    updateInfo.downloading = false;
+    updateInfo.progress = 100;
     rebuildTray();
-    showNotification('Güncelleme hazır', `Orbita v${latest} indirildi. Tepsi menüsünden yükleyebilirsin.`);
+    publishUpdate();
+    showNotification(
+      'Güncelleme hazır',
+      `Orbita v${latest} indirildi ve doğrulandı. Uygulamadan veya tepsi menüsünden kurabilirsin.`,
+    );
     log(`update ready: ${latest}`);
   } catch (error) {
+    updateInfo.downloading = false;
+    updateInfo.progress = null;
+    updateInfo.error = String(error.message || 'Güncelleme denetlenemedi.').slice(0, 300);
+    updateInfo.checkedAt = Date.now();
+    publishUpdate();
     log(`update check failed: ${error.message}`);
   } finally {
     updateCheckRunning = false;
+    updateInfo.currentVersion = app.getVersion();
   }
+  return updateView();
 }
 
 function installUpdate() {
   if (!pendingUpdate || !fs.existsSync(pendingUpdate.file)) {
     pendingUpdate = null;
+    updateInfo.downloaded = false;
+    updateInfo.available = false;
+    updateInfo.error = 'İndirilen güncelleme bulunamadı.';
+    publishUpdate();
     rebuildTray();
-    return;
+    return { ok: false, error: 'update_missing' };
   }
   try {
     const child = spawn(pendingUpdate.file, ['/S'], { detached: true, stdio: 'ignore' });
     child.unref();
     quitting = true;
-    app.quit();
+    setTimeout(() => app.quit(), 250);
+    return { ok: true, version: pendingUpdate.version };
   } catch (error) {
     log(`update install failed: ${error.message}`);
+    updateInfo.error = String(error.message || 'Güncelleme başlatılamadı.').slice(0, 300);
+    publishUpdate();
     showNotification('Güncelleme başlatılamadı', error.message);
+    return { ok: false, error: 'install_failed' };
   }
 }
 
@@ -1014,6 +1141,31 @@ if (!gotLock) {
     session.defaultSession.setPermissionCheckHandler(() => false);
     session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
     ipcMain.on('orbita:web-message', handleWebMessage);
+    ipcMain.handle('orbita:copy-text', (event, text) => {
+      if (!win || event.sender !== win.webContents) return false;
+      if (typeof text !== 'string' || !text || text.length > 100000) return false;
+      try {
+        clipboard.writeText(text);
+        return true;
+      } catch (error) {
+        log(`clipboard failed: ${error.message}`);
+        return false;
+      }
+    });
+    ipcMain.handle('orbita:update-status', (event) => {
+      if (!win || event.sender !== win.webContents) return null;
+      return updateView();
+    });
+    ipcMain.handle('orbita:update-check', async (event) => {
+      if (!win || event.sender !== win.webContents) return null;
+      return checkForUpdates({ manual: true });
+    });
+    ipcMain.handle('orbita:update-install', (event) => {
+      if (!win || event.sender !== win.webContents) return { ok: false };
+      return installUpdate();
+    });
+    updateInfo.currentVersion = app.getVersion();
+    updateInfo.supported = app.isPackaged;
     await initializeAutoStart();
     createTray();
     createWindow(!startHidden);

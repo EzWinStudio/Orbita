@@ -6,6 +6,7 @@ import { useI18n } from '../i18n';
 import { translateMessage } from '../i18n/core';
 import type { TranslationKey } from '../i18n/core';
 import { IS_WEB } from '../lib/runtime';
+import { copyText } from '../lib/clipboard';
 import {
   TRANSLATE_LANGUAGE_CODES,
   isTranslateLanguage,
@@ -133,12 +134,8 @@ export function Translate() {
 
   async function copy() {
     if (!result) return;
-    try {
-      await navigator.clipboard.writeText(result);
-      toast('success', t('Çeviri kopyalandı.'));
-    } catch {
-      toast('error', t('Kopyalanamadı.'));
-    }
+    const copied = await copyText(result);
+    toast(copied ? 'success' : 'error', t(copied ? 'Çeviri kopyalandı.' : 'Kopyalanamadı.'));
   }
 
   function swap() {

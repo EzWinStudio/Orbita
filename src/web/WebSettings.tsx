@@ -31,6 +31,7 @@ import { useWebAuth } from './WebAuthGate';
 import { AccountAvatar } from './AccountAvatar';
 import { exportAccountBundle } from './webAuth';
 import { SyncSettings } from './SyncSettings';
+import { UpdatePanel } from './UpdatePanel';
 import type { ClockFormat, Currency, LanguageCode, StartPage } from '../types';
 
 const START_PAGES: { value: StartPage; label: TranslationKey }[] = [
@@ -711,6 +712,8 @@ export function WebSettings() {
             </p>
           ) : null}
         </section>
+
+        {IS_TRAY || IS_ANDROID_APP ? <UpdatePanel /> : null}
 
         <section className="card settings-wide">
           <div className="card-header">

@@ -21,6 +21,18 @@ const DEFAULT_FEED_URL =
 
 const CHANGELOG = [
   {
+    version: '2.6.5',
+    date: '2026-11-06',
+    title: 'Masaüstü ve Android için otomatik güncelleme',
+    summary: 'Yeni sürümler GitHub üzerinden kendiliğinden indirilir, doğrulanır ve kurulur.',
+    items: [
+      'Masaüstü uygulaması yeni sürümü arka planda indirir ve SHA-256 ile doğrular; uygulamadan tek tıkla kurulur.',
+      'Uygulama kapanırken indirilmiş güncelleme varsa kurulum kendiliğinden başlar.',
+      'Android uygulaması yeni APK sürümünü denetler, indirir ve doğrulanmış paketi kurulum ekranına verir.',
+      'Eşitleme kodu ve çeviri sonucu artık masaüstü uygulamasında da güvenilir şekilde kopyalanır.',
+    ],
+  },
+  {
     version: '1.10.1',
     date: '2026-11-02',
     title: 'Çoklu YouTube anahtarları ve otomatik güncelleme',

@@ -31,4 +31,14 @@ contextBridge.exposeInMainWorld('ezwinHost', {
   removeEventListener: (type, handler) => {
     if (type === 'message') handlers.delete(handler);
   },
+  copyText: (text) =>
+    ipcRenderer
+      .invoke('orbita:copy-text', String(text ?? ''))
+      .then((ok) => ok === true)
+      .catch(() => false),
+  updates: {
+    status: () => ipcRenderer.invoke('orbita:update-status').catch(() => null),
+    check: () => ipcRenderer.invoke('orbita:update-check').catch(() => null),
+    install: () => ipcRenderer.invoke('orbita:update-install').catch(() => ({ ok: false })),
+  },
 });

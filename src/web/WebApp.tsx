@@ -24,6 +24,7 @@ import { IS_TRAY } from '../lib/runtime';
 import { IS_ANDROID_APP } from '../lib/native';
 import { PRODUCT_NAME } from '../lib/product';
 import { TrayBackgroundAgent } from './TrayBackgroundAgent';
+import { UpdateBanner } from './UpdateBanner';
 import { startSyncAgent } from './cloudSync';
 import { PAGE_LABEL, type IntentKind, type NavIntent, type Page } from '../nav';
 
@@ -289,6 +290,7 @@ export function WebApp() {
         onQuickAction={quickAction}
       />
       {IS_TRAY ? <TrayBackgroundAgent /> : null}
+      {IS_TRAY || IS_ANDROID_APP ? <UpdateBanner /> : null}
       <SyncAgent />
     </div>
   );

@@ -13,6 +13,7 @@ import {
 import { useApp, useAppData } from '../store';
 import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n/core';
+import { copyText } from '../lib/clipboard';
 import {
   connectSync,
   createSync,
@@ -66,12 +67,8 @@ export function SyncSettings() {
 
   const copyCode = async () => {
     if (!code) return;
-    try {
-      await navigator.clipboard.writeText(code);
-      toast('success', t('Kopyalandı.'));
-    } catch {
-      toast('error', t('Kopyalanamadı.'));
-    }
+    const copied = await copyText(code);
+    toast(copied ? 'success' : 'error', t(copied ? 'Kopyalandı.' : 'Kopyalanamadı.'));
   };
 
   const start = async () => {

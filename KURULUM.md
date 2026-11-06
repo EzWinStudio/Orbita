@@ -18,17 +18,17 @@ Web verileri tarayıcıda kalır. Cihazlar arasında ortak veri için Ayarlar > 
 
 | | |
 | --- | --- |
-| Dosya | `Orbita-Android-2.6.4.apk` |
+| Dosya | `Orbita-Android-2.6.5.apk` |
 | İşletim sistemi | Android 7.0 ve üzeri |
 | Paket | `com.ezwin.orbita` |
 | Boyut | yaklaşık 5 MB |
 | İmza | Orbita sürüm anahtarıyla imzalı APK |
 
-APK'yı [GitHub Releases](https://github.com/EzWinStudio/Orbita/releases/tag/v2.6.4) sayfasından indir. Telefonda dosyayı aç; Android izin isterse tarayıcı veya dosya yöneticisi için **bilinmeyen uygulamaları yükle** seçeneğini aç ve kurulumu tamamla. Uygulama mağaza dışından, imzalı APK olarak dağıtılır.
+APK'yı [GitHub Releases](https://github.com/EzWinStudio/Orbita/releases/tag/v2.6.5) sayfasından indir. Telefonda dosyayı aç; Android izin isterse tarayıcı veya dosya yöneticisi için **bilinmeyen uygulamaları yükle** seçeneğini aç ve kurulumu tamamla. Uygulama mağaza dışından, imzalı APK olarak dağıtılır.
 
 Orbita hesabınla giriş yap. Hesap ve çalışma alanı cihazda tutulur; Android oturumu uygulamaya özel saklanır. Eşitleme açıksa şifreli paket sunucudan alınır ve şirketler, görevler, finans ve iletişim kayıtları telefon, web ve masaüstünde aynı kalır. Eşitleme kapalıysa telefon kendi yerel çalışma alanını kullanır.
 
-Güncelleme için yeni APK'yı mevcut uygulamanın üzerine kur; aynı imza anahtarı kullanıldığı sürece veriler korunur. Sürüm anahtarı depoya eklenmez; yalnızca yayın derlemesinde kullanılır.
+2.6.5 ve sonrası, yeni APK'yı GitHub Releases üzerinden kendiliğinden denetler ve SHA-256 ile doğrulayarak kurulum ekranına verir. Kurulum için Android'in **bilinmeyen kaynaklar** iznini bir kez açman gerekebilir. Aynı imza anahtarı kullanıldığı sürece veriler korunur. Sürüm anahtarı depoya eklenmez; yalnızca yayın derlemesinde kullanılır.
 
 ### Android geliştirme
 
@@ -46,7 +46,7 @@ npm run android:release # web paketi + imzalı release APK
 
 | | |
 | --- | --- |
-| Dosya | `Orbita-Setup-2.6.4.exe` |
+| Dosya | `Orbita-Setup-2.6.5.exe` |
 | İşletim sistemi | Windows 10 / 11, 64 bit |
 | Çalışma zamanı | Gömülü Chromium (Electron) — harici WebView2 gerekmez |
 | Disk alanı | yaklaşık 360 MB |
@@ -66,7 +66,7 @@ Bu klasörler ürün adı değişse de silinmez; mevcut WebView2 profili ilk aç
 
 ## Güncelleme
 
-Yeni sürümler [GitHub Releases](https://github.com/EzWinStudio/Orbita/releases/latest) sayfasına yüklenir. Orbita altı saatte bir güncellemeyi kontrol eder; hazır olduğunda tepsi menüsünden tek tıkla kurabilirsin. Kurulum dosyasını indirip çalıştırmak da yeterlidir; veriler korunur. Android güncellemesi yeni APK'nın mevcut uygulamanın üzerine kurulmasıyla yapılır.
+Yeni sürümler [GitHub Releases](https://github.com/EzWinStudio/Orbita/releases/latest) sayfasına yüklenir. Masaüstü uygulaması altı saatte bir güncellemeyi denetler, kurulum dosyasını arka planda indirir ve SHA-256 ile doğrular. Ayarlar > Otomatik güncelleme bölümünden veya tepsi menüsünden tek tıkla kurabilirsin; tepsideki **Çıkış** komutu indirilmiş güncellemeyi kendiliğinden kurar. Android uygulaması da yeni APK'yı denetler, indirir ve doğrulanmış kurulum ekranını açar. Kurulum dosyasını elle indirmek de yeterlidir; veriler korunur.
 
 ## Kaldırma
 
