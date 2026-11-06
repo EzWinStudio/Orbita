@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#050807" />
-  <meta name="description" content="Orbita masaüstü uygulamasını Windows'a indir. Tepside çalışır, verilerin bu cihazda kalır." />
+  <meta name="description" content="Orbita'yı Windows'a veya Android'e indir. Masaüstü tepside çalışır, telefon aynı hesapla açılır; verilerin bu cihazda kalır." />
   <link rel="icon" href="../favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="../favicon-180.png" />
@@ -13,7 +13,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:image" content="https://orbita.wasmer.app/icon-512.png" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'none'" />
-  <title>Orbita · Windows kurulumu</title>
+  <title>Orbita · Windows ve Android kurulumu</title>
   <style>
     :root {
       color-scheme: dark;
@@ -388,22 +388,23 @@
       <nav class="nav-links" aria-label="Bağlantılar">
         <a href="https://orbita.wasmer.app">Web uygulaması</a>
         <a href="#kurulum">Kurulum</a>
+        <a href="#android">Android</a>
         <a href="#gereksinimler">Gereksinimler</a>
-        <a class="nav-cta" href="/download/Orbita-Setup-2.6.3.exe" download>İndir</a>
+        <a class="nav-cta" href="/download/Orbita-Setup-2.6.4.exe" download>İndir</a>
       </nav>
     </header>
 
     <main>
       <section class="hero" style="border-top: 0; padding-top: 44px;">
         <div>
-          <span class="eyebrow"><span class="eyebrow-dot"></span>Windows masaüstü · v2.6.3 · Electron</span>
+          <span class="eyebrow"><span class="eyebrow-dot"></span>Windows masaüstü · v2.6.4 · Electron</span>
           <h1>Orbita<br /><em>masaüstünde.</em></h1>
           <p class="lede">
             Şirketlerini, servislerini, finansını ve ekibini tek ekranda topla. Orbita tepside çalışır;
             site ve bot sağlığını arka planda izler, yönetim ve iletişim kayıtlarını cihazında tutar.
           </p>
           <div class="download-row">
-            <a class="download" href="/download/Orbita-Setup-2.6.3.exe" download>
+            <a class="download" href="/download/Orbita-Setup-2.6.4.exe" download>
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
                 <path d="M12 3v11" />
                 <path d="m7.5 10 4.5 4.5 4.5-4.5" />
@@ -465,6 +466,56 @@
         </div>
       </section>
 
+      <section id="android">
+        <div class="section-head">
+          <h2>Telefonda da yanında.</h2>
+          <p>Orbita Android uygulaması aynı hesapla açılır. Şifreli eşitleme açıksa şirketler, görevler ve finans kayıtları telefon, web ve masaüstünde aynı kalır.</p>
+        </div>
+        <div class="download-row">
+          <a class="download" href="https://github.com/EzWinStudio/Orbita/releases/download/v2.6.4/Orbita-Android-2.6.4.apk">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <rect x="7" y="2.5" width="10" height="19" rx="2.4" />
+              <path d="M10.5 18.5h3" />
+            </svg>
+            <span>
+              <strong>Android APK indir</strong>
+              <em>Android 7.0+ · 5 MB · imzalı</em>
+            </span>
+            <svg class="download-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </a>
+          <a class="download-alt" href="#android-kurulum">
+            Kurulum adımları
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+          </a>
+        </div>
+        <p class="micro">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7" /></svg>
+          APK imzalıdır. Android, bilinen bir kaynaktan kurulum için tek seferlik izin isteyebilir.
+        </p>
+        <div class="checksum">
+          <span class="checksum-label">APK SHA-256</span>
+          <code id="androidSha">hesaplanıyor…</code>
+          <button class="copy" type="button" id="copyAndroidSha">Kopyala</button>
+        </div>
+        <div class="steps" id="android-kurulum">
+          <article class="step">
+            <span class="step-num">01 / İNDİR</span>
+            <h3>APK'yı telefona al</h3>
+            <p>Orbita-Android-2.6.4.apk dosyasını indir. Kurulum yaklaşık 5 MB'dır.</p>
+          </article>
+          <article class="step">
+            <span class="step-num">02 / KUR</span>
+            <h3>Bilinmeyen kaynağa izin ver</h3>
+            <p>Android isterse tarayıcı veya dosya yöneticisi için "bilinmeyen uygulamaları yükle" iznini aç, APK'yı aç ve kur.</p>
+          </article>
+          <article class="step">
+            <span class="step-num">03 / GİRİŞ YAP</span>
+            <h3>Aynı hesapla devam et</h3>
+            <p>Orbita hesabınla giriş yap. Eşitleme açıksa verilerin telefonuna gelir; kapalıysa cihazda yeni bir çalışma alanı başlar.</p>
+          </article>
+        </div>
+      </section>
+
       <section id="kurulum">
         <div class="section-head">
           <h2>Üç adımda hazır.</h2>
@@ -474,7 +525,7 @@
           <article class="step">
             <span class="step-num">01 / İNDİR</span>
             <h3>Kurulum dosyasını al</h3>
-            <p>Orbita-Setup-2.6.3.exe dosyasını indir. Tek dosya, harici çalışma zamanı gerekmez.</p>
+            <p>Orbita-Setup-2.6.4.exe dosyasını indir. Tek dosya, harici çalışma zamanı gerekmez.</p>
           </article>
           <article class="step">
             <span class="step-num">02 / ÇALIŞTIR</span>
@@ -572,9 +623,9 @@
         <div class="cta">
           <div>
             <h2>Komuta merkezini masaya taşı.</h2>
-            <p>Orbita 2.6.3 · Windows 10/11 · kurulum mevcut verilerini korur.</p>
+            <p>Orbita 2.6.4 · Windows 10/11 · kurulum mevcut verilerini korur.</p>
           </div>
-          <a class="download" href="/download/Orbita-Setup-2.6.3.exe" download>
+          <a class="download" href="/download/Orbita-Setup-2.6.4.exe" download>
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v11" /><path d="m7.5 10 4.5 4.5 4.5-4.5" /><path d="M5 17.5V19h14v-1.5" /></svg>
             <span><strong>Windows için indir</strong><em>64-bit · 118 MB</em></span>
             <svg class="download-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
@@ -600,7 +651,7 @@
       const toast = document.getElementById('toast');
       let hash = '';
       try {
-        const response = await fetch('/download/Orbita-Setup-2.6.3.sha256', { cache: 'no-store' });
+        const response = await fetch('/download/Orbita-Setup-2.6.4.sha256', { cache: 'no-store' });
         const text = await response.text();
         hash = (text.match(/[a-f0-9]{64}/i) || [''])[0].toLowerCase();
         code.textContent = hash ? hash.slice(0, 16) + '…' + hash.slice(-8) : 'doğrulanamadı';
@@ -612,6 +663,26 @@
         if (!hash) return;
         try {
           await navigator.clipboard.writeText(hash);
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 1600);
+        } catch {}
+      });
+      const androidCode = document.getElementById('androidSha');
+      const androidCopy = document.getElementById('copyAndroidSha');
+      let androidHash = '';
+      try {
+        const response = await fetch('/download/Orbita-Android-2.6.4.apk.sha256', { cache: 'no-store' });
+        const text = await response.text();
+        androidHash = (text.match(/[a-f0-9]{64}/i) || [''])[0].toLowerCase();
+        androidCode.textContent = androidHash ? androidHash.slice(0, 16) + '…' + androidHash.slice(-8) : 'doğrulanamadı';
+        androidCode.title = androidHash;
+      } catch {
+        androidCode.textContent = 'doğrulanamadı';
+      }
+      androidCopy.addEventListener('click', async () => {
+        if (!androidHash) return;
+        try {
+          await navigator.clipboard.writeText(androidHash);
           toast.classList.add('show');
           setTimeout(() => toast.classList.remove('show'), 1600);
         } catch {}

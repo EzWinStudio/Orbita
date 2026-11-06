@@ -21,6 +21,7 @@ import { Translate } from '../pages/Translate';
 import { useApp } from '../store';
 import { useI18n } from '../i18n';
 import { IS_TRAY } from '../lib/runtime';
+import { IS_ANDROID_APP } from '../lib/native';
 import { PRODUCT_NAME } from '../lib/product';
 import { TrayBackgroundAgent } from './TrayBackgroundAgent';
 import { startSyncAgent } from './cloudSync';
@@ -60,11 +61,16 @@ export function WebApp() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const scrollRef = useRef<HTMLElement>(null);
+  const navState = useRef({ navOpen: false, activePage: 'dashboard' as Page });
 
   const startPage = data?.settings.startPage;
   const fallbackPage =
     startPage && WEB_PAGES.includes(startPage) ? startPage : 'dashboard';
   const activePage: Page = page ?? fallbackPage;
+
+  useEffect(() => {
+    navState.current = { navOpen, activePage };
+  }, [navOpen, activePage]);
 
   const navigate = useCallback((next: Page, nextCompanyId?: string | null) => {
     setPage(next);
@@ -100,6 +106,49 @@ export function WebApp() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    if (!IS_ANDROID_APP) return;
+    let disposed = false;
+    let removeListener: (() => void) | undefined;
+    void import('@capacitor/app')
+      .then(({ App }) => {
+        if (disposed) return;
+        void App.addListener('backButton', () => {
+          const state = navState.current;
+          if (state.navOpen) {
+            setNavOpen(false);
+            return;
+          }
+          if (state.activePage !== 'dashboard') {
+            setPage('dashboard');
+            setCompanyId(null);
+            setIntent(null);
+            return;
+          }
+          void App.exitApp();
+        }).then((handle) => {
+          removeListener = () => {
+            void handle.remove();
+          };
+        });
+      })
+      .catch(() => {
+        /* back handling is optional outside the native shell */
+      });
+    void import('@capacitor/status-bar')
+      .then(({ StatusBar, Style }) =>
+        Promise.allSettled([
+          StatusBar.setStyle({ style: Style.Dark }),
+          StatusBar.setBackgroundColor({ color: '#050807' }),
+        ]),
+      )
+      .catch(() => {});
+    return () => {
+      disposed = true;
+      removeListener?.();
+    };
   }, []);
 
   useEffect(() => {

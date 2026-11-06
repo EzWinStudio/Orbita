@@ -34,6 +34,8 @@ import { PageHeader } from '../components/PageHeader';
 import { KpiCard } from '../components/KpiCard';
 import { WebNotice } from '../web/WebNotice';
 import { IS_TRAY, IS_WEB } from '../lib/runtime';
+import { IS_ANDROID_APP } from '../lib/native';
+import { liveMonitoringLabel } from '../lib/liveMonitoring';
 import { MonthlyBars } from '../components/MonthlyBars';
 import { WeeklyBars, type DayPerformance } from '../components/WeeklyBars';
 import { StatusPill } from '../components/StatusPill';
@@ -379,7 +381,7 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
               <div>
                 <h2>{t('Başlangıç planı')}</h2>
                 <p>
-                  {IS_TRAY
+                  {IS_TRAY || IS_ANDROID_APP
                     ? t('Şirketlerini, görevlerini ve finansını bu uygulamada yönet.')
                     : IS_WEB
                       ? t('Şirketlerini, görevlerini ve finansını bu tarayıcıda yönet.')
@@ -489,7 +491,7 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
               {IS_TRAY
                 ? t('Site ve bot sağlığı arka planda izlenir.')
                 : IS_WEB
-                  ? t('Canlı izleme tarayıcı sürümünde kapalı.')
+                  ? liveMonitoringLabel(t)
                   : t('Servisleri bağladıktan sonra otomatik kontrol döngüsü başlar.')}
             </div>
           </section>
@@ -548,7 +550,7 @@ export function Dashboard({ navigate, onOpenPalette }: DashboardProps) {
             hint={
               IS_TRAY
                 ? t('Site ve bot sağlığı arka planda izlenir.')
-                : t('Canlı izleme tarayıcı sürümünde kapalı.')
+                : liveMonitoringLabel(t)
             }
             icon={<Activity size={16} />}
             footer={

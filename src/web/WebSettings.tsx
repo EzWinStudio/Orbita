@@ -23,6 +23,8 @@ import type { TranslationKey } from '../i18n/core';
 import { CURRENCY_LABEL } from '../constants';
 import { clearAllData, importBackup, loadPortfolioSeed, storageBytes } from './browserApi';
 import { IS_TRAY } from '../lib/runtime';
+import { IS_ANDROID_APP } from '../lib/native';
+import { liveMonitoringLabel, liveMonitoringNote } from '../lib/liveMonitoring';
 import { APP_THEMES } from '../lib/appearance';
 import { fileToAvatarDataUrl } from '../lib/imageFile';
 import { useWebAuth } from './WebAuthGate';
@@ -275,6 +277,7 @@ export function WebSettings() {
               className="input select select-compact"
               value={data.settings.currency}
               disabled={busy === 'currency'}
+              aria-label={t('Para birimi')}
               onChange={(event) =>
                 void update('currency', { currency: event.target.value as Currency })
               }
@@ -372,6 +375,7 @@ export function WebSettings() {
               className="input select select-compact"
               value={data.settings.clockFormat ?? '24h'}
               disabled={busy === 'clock-format'}
+              aria-label={t('Saat biçimi')}
               onChange={(event) =>
                 void update('clock-format', {
                   clockFormat: event.target.value as ClockFormat,
@@ -412,6 +416,7 @@ export function WebSettings() {
               className="input select select-compact"
               value={data.settings.startPage ?? 'dashboard'}
               disabled={busy === 'start-page'}
+              aria-label={t('Başlangıç sayfası')}
               onChange={(event) =>
                 void update('start-page', { startPage: event.target.value as StartPage })
               }
@@ -548,7 +553,7 @@ export function WebSettings() {
           <div className="setting-row">
             <div className="setting-text">
               <strong>
-                {IS_TRAY ? t('Bu cihazda saklanan veri') : t('Bu tarayıcıda saklanan veri')}
+                {IS_TRAY || IS_ANDROID_APP ? t('Bu cihazda saklanan veri') : t('Bu tarayıcıda saklanan veri')}
               </strong>
               <span>{t('Yerel depolama')}</span>
             </div>
@@ -671,19 +676,19 @@ export function WebSettings() {
               <span>{meta?.appVersion ?? '2.0.0'}</span>
             </div>
             <span className="web-platform-badge">
-              {IS_TRAY ? t('Masaüstü') : t('Web sürümü')}
+              {IS_TRAY ? t('Masaüstü') : IS_ANDROID_APP ? 'Android' : t('Web sürümü')}
             </span>
           </div>
           <div className="setting-row">
             <div className="setting-text">
               <strong>{t('Veri saklama')}</strong>
               <span>
-                {IS_TRAY ? t('Bu cihazda saklanıyor') : t('Bu tarayıcıda saklanıyor')}
+                {IS_TRAY || IS_ANDROID_APP ? t('Bu cihazda saklanıyor') : t('Bu tarayıcıda saklanıyor')}
               </span>
             </div>
             <span className="card-icon card-icon-soft"><HardDrive size={17} /></span>
           </div>
-          {!IS_TRAY ? (
+          {!IS_TRAY && !IS_ANDROID_APP ? (
             <div className="setting-row">
               <div className="setting-text">
                 <strong>Windows</strong>
@@ -700,7 +705,7 @@ export function WebSettings() {
               'Tek kişilik komuta merkezi. Şirket portföyün, finans, görevler ve notlar tek uygulamada; veriler bu cihazda kalır.',
             )}
           </p>
-          {!IS_TRAY ? (
+          {!IS_TRAY && !IS_ANDROID_APP ? (
             <p className="setting-note">
               {t('Telefonda tarayıcı menüsünden Ana ekrana ekle ile uygulamayı yükleyebilirsin.')}
             </p>
@@ -710,7 +715,13 @@ export function WebSettings() {
         <section className="card settings-wide">
           <div className="card-header">
             <div>
-              <h2>{IS_TRAY ? t('Masaüstü sınırlamaları') : t('Tarayıcı sınırlamaları')}</h2>
+              <h2>
+                {IS_TRAY
+                  ? t('Masaüstü sınırlamaları')
+                  : IS_ANDROID_APP
+                    ? t('Mobil sürüm sınırlamaları')
+                    : t('Tarayıcı sınırlamaları')}
+              </h2>
               <p>{t('Güvenlik nedeniyle kapalı özellikler.')}</p>
             </div>
             <span className="card-icon"><ShieldCheck size={17} /></span>
@@ -746,7 +757,7 @@ export function WebSettings() {
             <>
               <ul className="web-limits-list">
                 <li>
-                  <strong>{t('Canlı izleme tarayıcı sürümünde kapalı.')}</strong>
+                  <strong>{liveMonitoringLabel(t)}</strong>
                   <span>{t('Servisler envanter olarak listelenir; canlı API kontrolü yapılmaz.')}</span>
                 </li>
                 <li>
@@ -758,11 +769,7 @@ export function WebSettings() {
                   </span>
                 </li>
               </ul>
-              <p className="setting-note">
-                {t(
-                  'Tarayıcı; Discord, Pterodactyl veya site durumlarını güvenli şekilde kontrol edemez. Sahte durum göstermiyoruz; servisler envanter ve hızlı bağlantı olarak kalır.',
-                )}
-              </p>
+              <p className="setting-note">{liveMonitoringNote(t)}</p>
             </>
           )}
         </section>

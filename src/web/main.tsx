@@ -8,6 +8,7 @@ import { I18nGate } from '../i18n/I18nGate';
 import { applyReduceMotion, applyTheme, storedReduceMotion, storedTheme } from '../lib/appearance';
 import { IS_TRAY } from '../lib/runtime';
 import { registerServiceWorker } from './pwa';
+import '../lib/native';
 import '../styles.css';
 import '../styles-communication.css';
 import '../styles-admin.css';

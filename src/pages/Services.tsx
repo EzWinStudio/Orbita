@@ -18,6 +18,7 @@ import {
 import { PageHeader } from '../components/PageHeader';
 import { WebNotice } from '../web/WebNotice';
 import { IS_TRAY, IS_WEB } from '../lib/runtime';
+import { liveMonitoringLabel } from '../lib/liveMonitoring';
 import { requestTrayCheck } from '../web/trayBridge';
 import { StatusPill } from '../components/StatusPill';
 import { AssetIcon } from '../components/AssetIcon';
@@ -582,7 +583,7 @@ export function Services({ navigate, intent, onIntentHandled }: ServicesProps) {
                                 ? t('Bot bağlantısı bekliyor')
                                 : t('İlk kontrol bekleniyor')
                               : IS_WEB
-                                ? t('Canlı izleme tarayıcı sürümünde kapalı.')
+                                ? liveMonitoringLabel(t)
                                 : t('Henüz canlı veri yok. {next} otomatik olarak çalışacak.', {
                                     next: needsSecret
                                       ? t('Anahtar ekledikten sonra')

@@ -21,6 +21,7 @@ import { LogoMark, Wordmark } from '../components/Logo';
 import { useI18n } from '../i18n';
 import { translateMessage } from '../i18n/core';
 import { IS_TRAY } from '../lib/runtime';
+import { IS_ANDROID_APP } from '../lib/native';
 import { PRODUCT_NAME } from '../lib/product';
 import type { LanguageCode } from '../types';
 import { AccountAvatar } from './AccountAvatar';
@@ -293,10 +294,10 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
       <header className="auth-topbar">
         <div className="auth-brand">
           <Wordmark />
-          <span className="auth-web-tag">{IS_TRAY ? t('Masaüstü') : 'Web'}</span>
+          <span className="auth-web-tag">{IS_TRAY ? t('Masaüstü') : IS_ANDROID_APP ? 'Android' : 'Web'}</span>
         </div>
         <div className="auth-actions">
-          {IS_TRAY ? null : (
+          {IS_TRAY || IS_ANDROID_APP ? null : (
             <a className="auth-download-chip" href="./indir/" title={t('Windows uygulamasını indir')}>
               <MonitorDown size={14} aria-hidden="true" />
               <span>Windows</span>
@@ -327,7 +328,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
           </span>
           <h1>{t('Komuta merkezi senin elinde.')}</h1>
           <p>
-            {IS_TRAY
+            {IS_TRAY || IS_ANDROID_APP
               ? t(
                   'Şirketler, servisler, finans, görevler ve notlar; hepsi bu uygulamada. Yerel hesabınla aç, kaldığın yerden devam et.',
                 )
@@ -357,7 +358,7 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
               <span>{t('Profil fotoğrafı ve şirket logoları yüklenebilir.')}</span>
             </li>
           </ul>
-          {IS_TRAY ? null : (
+          {IS_TRAY || IS_ANDROID_APP ? null : (
             <a className="auth-desktop-cta" href="./indir/">
               <span className="auth-desktop-icon">
                 <MonitorDown size={18} aria-hidden="true" />
@@ -458,7 +459,11 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
                   <LogIn size={16} />
                 </span>
                 <div>
-                  <strong>{t('Bu tarayıcıda kayıtlı hesap yok.')}</strong>
+                  <strong>
+                    {IS_ANDROID_APP
+                      ? t('Bu cihazda kayıtlı hesap yok.')
+                      : t('Bu tarayıcıda kayıtlı hesap yok.')}
+                  </strong>
                   <p>
                     {t('Masaüstü hesabınla veya yeni bir hesapla giriş yapabilirsin.')}
                   </p>

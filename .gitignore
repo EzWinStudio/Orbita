@@ -15,3 +15,10 @@ __pycache__/
 *.pyc
 .env
 .env.*
+
+# Local web/PWA build output
+web-dist/
+
+# Local build cache and Android release binaries
+.build-cache/
+*.apk

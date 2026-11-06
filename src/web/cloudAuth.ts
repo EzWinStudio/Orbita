@@ -9,6 +9,7 @@ import {
   type LoginInput,
   type RegisterInput,
 } from './webAuth';
+import { IS_ANDROID_APP, NATIVE_API_BASE } from '../lib/native';
 
 export class CloudUnavailableError extends Error {
   constructor() {
@@ -45,10 +46,50 @@ interface CloudReply {
   retryAfter?: unknown;
   account?: unknown;
   expiresAt?: unknown;
+  token?: unknown;
 }
 
 const REQUEST_TIMEOUT = 8_000;
 const SESSION_TIMEOUT = 6_000;
+const NATIVE_TOKEN_KEY = 'orbita.native.session';
+
+function readNativeToken(): string {
+  if (!IS_ANDROID_APP) return '';
+  try {
+    return window.localStorage.getItem(NATIVE_TOKEN_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function saveNativeToken(value: unknown): void {
+  if (!IS_ANDROID_APP) return;
+  const token = asString(value);
+  if (!token) return;
+  try {
+    window.localStorage.setItem(NATIVE_TOKEN_KEY, token);
+  } catch {
+    /* storage can be unavailable; the cookie session remains */
+  }
+}
+
+function clearNativeToken(): void {
+  if (!IS_ANDROID_APP) return;
+  try {
+    window.localStorage.removeItem(NATIVE_TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function nativeHeaders(): Record<string, string> {
+  if (!IS_ANDROID_APP) return {};
+  const token = readNativeToken();
+  return {
+    'X-Orbita-Client': 'android',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
 function asString(value: unknown): string {
   return typeof value === 'string' ? value : '';
@@ -88,13 +129,14 @@ async function cloudRequest(
   const timer = window.setTimeout(() => controller.abort(), timeout);
   let response: Response;
   try {
-    response = await fetch(`/api/auth/${path}`, {
+    response = await fetch(`${NATIVE_API_BASE}/api/auth/${path}`, {
       ...init,
       credentials: 'include',
       cache: 'no-store',
       signal: controller.signal,
       headers: {
         ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+        ...nativeHeaders(),
         ...(init.headers || {}),
       },
     });
@@ -133,6 +175,7 @@ async function adoptReply(body: CloudReply, remember: boolean): Promise<AuthSess
   const account = normalizeAccount(body.account);
   const expiresAt = sessionExpiry(body.expiresAt);
   if (!account || !expiresAt) throw new CloudUnavailableError();
+  saveNativeToken(body.token);
   const session = { remember, expiresAt };
   writeCloudSession(account, session);
   setLastCloudEmail(account.email);
@@ -180,6 +223,7 @@ export async function validateCloudSession(): Promise<{
   } catch (error) {
     if (error instanceof CloudAuthError) {
       clearCloudSession();
+      clearNativeToken();
       return { status: 'invalid' };
     }
     return { status: 'offline' };
@@ -187,13 +231,15 @@ export async function validateCloudSession(): Promise<{
 }
 
 export function logoutCloudAccount(): void {
+  const headers = nativeHeaders();
   clearCloudSession();
-  void fetch('/api/auth/logout', {
+  clearNativeToken();
+  void fetch(`${NATIVE_API_BASE}/api/auth/logout`, {
     method: 'POST',
     credentials: 'include',
     cache: 'no-store',
     keepalive: true,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
     body: '{}',
   }).catch(() => {
     /* the local session is already cleared */

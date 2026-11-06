@@ -2,6 +2,7 @@ import { Calculator, Menu, Search } from 'lucide-react';
 import { PAGE_LABEL, type Page } from '../nav';
 import { useI18n } from '../i18n';
 import { IS_TRAY } from '../lib/runtime';
+import { IS_ANDROID_APP } from '../lib/native';
 
 interface WebTitleBarProps {
   page: Page;
@@ -56,7 +57,7 @@ export function WebTitleBar({
         </button>
         <span className="titlebar-status web-titlebar-status">
           <span className="web-status-dot" />
-          {IS_TRAY ? t('Yerel cihaz verisi') : t('Yerel tarayıcı verisi')}
+          {IS_TRAY || IS_ANDROID_APP ? t('Yerel cihaz verisi') : t('Yerel tarayıcı verisi')}
         </span>
       </div>
     </header>

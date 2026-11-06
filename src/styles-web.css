@@ -261,13 +261,16 @@
     z-index: 70;
     width: min(284px, 86vw);
     transform: translateX(-102%);
-    transition: transform 0.22s ease;
+    visibility: hidden;
+    transition: transform 0.22s ease, visibility 0s linear 0.22s;
     background: linear-gradient(180deg, rgba(var(--bg2-rgb), 0.98), rgba(var(--bg-rgb), 0.98));
     box-shadow: 24px 0 60px rgba(0, 0, 0, 0.45);
   }
 
   .sidebar.is-open {
     transform: none;
+    visibility: visible;
+    transition: transform 0.22s ease, visibility 0s linear 0s;
   }
 
   .web-nav-scrim {
@@ -2168,5 +2171,33 @@ html[data-host='web'] .titlebar {
     html[data-host='web'] .titlebar {
       padding-inline-end: calc(10px + env(safe-area-inset-right));
     }
+  }
+}
+
+/* Native Android shell: edge-to-edge safe areas */
+html.capacitor-android .titlebar {
+  height: calc(40px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+html.capacitor-android .page-wrap {
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+}
+
+html.capacitor-android .auth-topbar {
+  padding-top: calc(22px + env(safe-area-inset-top, 0px));
+}
+
+html.capacitor-android .auth-main {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 900px) {
+  html.capacitor-android .sidebar {
+    top: calc(40px + env(safe-area-inset-top, 0px));
+  }
+
+  html.capacitor-android .web-nav-scrim {
+    inset: calc(40px + env(safe-area-inset-top, 0px)) 0 0;
   }
 }

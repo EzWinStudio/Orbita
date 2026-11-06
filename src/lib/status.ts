@@ -2,6 +2,7 @@ import type { Asset, CompanyHealthState, ServiceState, ServiceStatus } from '../
 import type { TFunction, TranslationKey } from '../i18n/core';
 import { STATE_LABEL } from '../constants';
 import { IS_TRAY, IS_WEB } from './runtime';
+import { liveMonitoringLabel } from './liveMonitoring';
 
 const EXACT_MESSAGES: Record<string, TranslationKey> = {
   'Bağlantı reddedildi': 'Bağlantı reddedildi',
@@ -153,7 +154,7 @@ export function serviceSummary(
   if (IS_WEB) {
     return asset.type === 'discord'
       ? t('Bot durumu masaüstü uygulamasında kontrol edilir.')
-      : t('Canlı izleme tarayıcı sürümünde kapalı.');
+      : liveMonitoringLabel(t);
   }
 
   if (!status) {

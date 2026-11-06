@@ -17,14 +17,28 @@ import orbita_sync as sync
 PUBLIC_DIR = os.path.abspath(os.environ.get('ORBITA_PUBLIC_DIR') or os.path.join(os.path.dirname(__file__), '..', 'public'))
 COOKIE_NAME = 'orbita_session'
 COOKIE_SECURE = os.environ.get('ORBITA_COOKIE_SECURE', '1') != '0'
-APP_VERSION = '2.6.3'
-SYNC_ORIGINS = {
+APP_VERSION = '2.6.4'
+MOBILE_ORIGINS = {
+    'https://localhost',
+    'capacitor://localhost',
+}
+AUTH_ORIGINS = {
     'https://orbita.wasmer.app',
+    'https://orbita-auth-probe.wasmer.app',
     'https://ezwin.local',
+    'http://localhost:4173',
     'http://localhost:5174',
     'http://127.0.0.1:4173',
     'http://127.0.0.1:5174',
-}
+} | MOBILE_ORIGINS
+SYNC_ORIGINS = {
+    'https://orbita.wasmer.app',
+    'https://ezwin.local',
+    'http://localhost:4173',
+    'http://localhost:5174',
+    'http://127.0.0.1:4173',
+    'http://127.0.0.1:5174',
+} | MOBILE_ORIGINS
 GITHUB_RELEASES = 'https://github.com/EzWinStudio/Orbita/releases/download'
 DOWNLOAD_PATTERN = re.compile(r'^Orbita-(Setup|Portable)-(\d+\.\d+\.\d+)\.exe$')
 
@@ -84,7 +98,7 @@ def origin_allowed():
     allowed = {
         'https://orbita.wasmer.app',
         'https://orbita-auth-probe.wasmer.app',
-    }
+    } | MOBILE_ORIGINS
     for value in os.environ.get('ORBITA_ALLOWED_ORIGINS', '').split(','):
         if value.strip():
             allowed.add(value.strip().rstrip('/'))
@@ -110,7 +124,7 @@ def set_session_cookie(response, token, expires_at, remember):
         max_age=max_age,
         httponly=True,
         secure=COOKIE_SECURE,
-        samesite='Lax',
+        samesite='None' if COOKIE_SECURE else 'Lax',
         path='/',
     )
     return response
@@ -122,13 +136,24 @@ def clear_session_cookie(response):
         path='/',
         httponly=True,
         secure=COOKIE_SECURE,
-        samesite='Lax',
+        samesite='None' if COOKIE_SECURE else 'Lax',
     )
     return response
 
 
+def native_client():
+    return request.headers.get('X-Orbita-Client', '').strip().lower() == 'android'
+
+
+def session_token():
+    header = request.headers.get('Authorization', '')
+    if header[:7].lower() == 'bearer ':
+        return header[7:].strip()
+    return request.cookies.get(COOKIE_NAME) or ''
+
+
 def session_context():
-    token = request.cookies.get(COOKIE_NAME) or ''
+    token = session_token()
     if not token:
         return None, None
     return auth.find_by_session(get_db(), token)
@@ -180,7 +205,14 @@ def login():
         elif result['code'] == 'two_factor_unsupported':
             status = 403
         return error_response(result['code'], status, **extra)
-    response = jsonify({'ok': True, 'account': result['account'], 'expiresAt': result['expiresAt']})
+    payload = {
+        'ok': True,
+        'account': result['account'],
+        'expiresAt': result['expiresAt'],
+    }
+    if native_client():
+        payload['token'] = result['token']
+    response = jsonify(payload)
     return set_session_cookie(
         response,
         result['token'],
@@ -214,7 +246,14 @@ def register():
         if result['code'] == 'email_exists':
             status = 409
         return error_response(result['code'], status)
-    response = jsonify({'ok': True, 'account': result['account'], 'expiresAt': result['expiresAt']})
+    payload = {
+        'ok': True,
+        'account': result['account'],
+        'expiresAt': result['expiresAt'],
+    }
+    if native_client():
+        payload['token'] = result['token']
+    response = jsonify(payload)
     response.status_code = 201
     return set_session_cookie(
         response,
@@ -226,7 +265,7 @@ def register():
 
 @app.route('/api/auth/session', methods=['GET'])
 def session():
-    token = request.cookies.get(COOKIE_NAME) or ''
+    token = session_token()
     if not token:
         return error_response('no_session', 401)
     try:
@@ -249,7 +288,7 @@ def logout():
     blocked = require_origin()
     if blocked:
         return blocked
-    token = request.cookies.get(COOKIE_NAME) or ''
+    token = session_token()
     try:
         if token:
             auth.logout(get_db(), token)
@@ -385,6 +424,17 @@ def apply_headers(response):
             response.headers['Vary'] = 'Origin'
             response.headers['Access-Control-Allow-Methods'] = 'GET, PUT, OPTIONS'
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    if request.path.startswith('/api/auth/'):
+        origin = request.headers.get('Origin')
+        if origin and origin.rstrip('/') in AUTH_ORIGINS:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Vary'] = 'Origin'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PATCH, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = (
+                'Content-Type, Authorization, X-Orbita-Client'
+            )
+            response.headers['Access-Control-Max-Age'] = '600'
     if request.path.startswith('/api/'):
         response.headers['Cache-Control'] = 'no-store'
         response.headers['Pragma'] = 'no-cache'

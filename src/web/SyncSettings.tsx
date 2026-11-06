@@ -225,6 +225,7 @@ export function SyncSettings() {
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 placeholder={t('Eşitleme kodu')}
+                aria-label={t('Eşitleme kodu')}
                 autoComplete="off"
                 spellCheck={false}
                 dir="ltr"

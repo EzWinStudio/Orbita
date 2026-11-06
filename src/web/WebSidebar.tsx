@@ -20,6 +20,7 @@ import { Wordmark } from '../components/Logo';
 import { useApp } from '../store';
 import { useI18n } from '../i18n';
 import { IS_TRAY } from '../lib/runtime';
+import { IS_ANDROID_APP } from '../lib/native';
 import type { TranslationKey } from '../i18n/core';
 import type { Page } from '../nav';
 import { formatClock, formatLongDate } from '../lib/format';
@@ -288,7 +289,7 @@ export function WebSidebar({ page, companyId, navigate, open }: WebSidebarProps)
           </div>
           <span className="clock-date">{formatLongDate(now)}</span>
           <span className="clock-meta">
-            {IS_TRAY ? t('Yerel cihaz verisi') : t('Yerel tarayıcı verisi')}
+            {IS_TRAY || IS_ANDROID_APP ? t('Yerel cihaz verisi') : t('Yerel tarayıcı verisi')}
           </span>
         </div>
       </div>

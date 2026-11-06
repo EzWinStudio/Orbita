@@ -902,6 +902,10 @@ export const en = {
   "YouTube verisi alınamadı.": "YouTube data could not be fetched.",
   // Web edition
   "Yerel tarayıcı verisi": "Local browser data",
+  "Mobil sürüm sınırlamaları": "Mobile version limitations",
+  "Canlı izleme mobil uygulamada kapalı.": "Live monitoring is off in the mobile app.",
+  "Mobil uygulama; Discord, Pterodactyl veya site durumlarını güvenli şekilde kontrol edemez. Sahte durum göstermiyoruz; servisler envanter ve hızlı bağlantı olarak kalır.": "The mobile app cannot safely check Discord, Pterodactyl or website status. We do not show fake statuses; services stay as an inventory and quick links.",
+  "Bu cihazda kayıtlı hesap yok.": "No saved account on this device.",
   "Canlı izleme tarayıcı sürümünde kapalı.": "Live monitoring is off in the browser version.",
   "Tarayıcı; Discord, Pterodactyl veya site durumlarını güvenli şekilde kontrol edemez. Sahte durum göstermiyoruz; servisler envanter ve hızlı bağlantı olarak kalır.": "The browser cannot safely check Discord, Pterodactyl or website status. We do not show fake statuses; services stay as an inventory and quick links.",
   "Dil, para birimi, tarayıcı verisi ve JSON yedekleme.": "Language, currency, browser data and JSON backup.",

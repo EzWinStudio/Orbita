@@ -16,6 +16,7 @@ import { useApp } from '../store';
 import { useI18n } from '../i18n';
 import { translateMessage } from '../i18n/core';
 import { IS_TRAY, IS_WEB } from '../lib/runtime';
+import { liveMonitoringLabel } from '../lib/liveMonitoring';
 import { useBotHints } from '../web/botSecrets';
 import { checkBotsNow, clearBotSecret, saveBotSecret } from '../web/botBridge';
 import { clearServiceStatuses, findAssetId } from '../web/browserApi';
@@ -468,7 +469,7 @@ export function AssetModal({ open, onClose, asset, defaultCompanyId }: AssetModa
           </p>
         ) : (
           <p className="setting-note web-form-note">
-            {t('Canlı izleme tarayıcı sürümünde kapalı.')}
+            {liveMonitoringLabel(t)}
           </p>
         )}
       </form>
