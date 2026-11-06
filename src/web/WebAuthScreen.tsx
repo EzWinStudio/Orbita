@@ -15,6 +15,7 @@ import {
   LogIn,
   MonitorDown,
   ShieldCheck,
+  Smartphone,
   UserPlus,
 } from 'lucide-react';
 import { LogoMark, Wordmark } from '../components/Logo';
@@ -298,10 +299,20 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
         </div>
         <div className="auth-actions">
           {IS_TRAY || IS_ANDROID_APP ? null : (
-            <a className="auth-download-chip" href="./indir/" title={t('Windows uygulamasını indir')}>
-              <MonitorDown size={14} aria-hidden="true" />
-              <span>Windows</span>
-            </a>
+            <>
+              <a className="auth-download-chip" href="./indir/" title={t('Windows uygulamasını indir')}>
+                <MonitorDown size={14} aria-hidden="true" />
+                <span>Windows</span>
+              </a>
+              <a
+                className="auth-download-chip"
+                href="./indir/#android"
+                title={t('Android uygulamasını indir')}
+              >
+                <Smartphone size={14} aria-hidden="true" />
+                <span>Android</span>
+              </a>
+            </>
           )}
           <label className="auth-lang">
             <Languages size={14} aria-hidden="true" />
@@ -359,16 +370,28 @@ export function WebAuthScreen({ account, onAuthed, onReset, onGuest }: WebAuthSc
             </li>
           </ul>
           {IS_TRAY || IS_ANDROID_APP ? null : (
-            <a className="auth-desktop-cta" href="./indir/">
-              <span className="auth-desktop-icon">
-                <MonitorDown size={18} aria-hidden="true" />
-              </span>
-              <span className="auth-desktop-text">
-                <strong>{t('Windows uygulamasını indir')}</strong>
-                <em>{t('Tepside çalışır; veriler yerelde kalır.')}</em>
-              </span>
-              <ArrowRight size={16} aria-hidden="true" />
-            </a>
+            <div className="auth-downloads">
+              <a className="auth-desktop-cta" href="./indir/">
+                <span className="auth-desktop-icon">
+                  <MonitorDown size={18} aria-hidden="true" />
+                </span>
+                <span className="auth-desktop-text">
+                  <strong>{t('Windows uygulamasını indir')}</strong>
+                  <em>{t('Tepside çalışır; veriler yerelde kalır.')}</em>
+                </span>
+                <ArrowRight size={16} aria-hidden="true" />
+              </a>
+              <a className="auth-desktop-cta" href="./indir/#android">
+                <span className="auth-desktop-icon">
+                  <Smartphone size={18} aria-hidden="true" />
+                </span>
+                <span className="auth-desktop-text">
+                  <strong>{t('Android uygulamasını indir')}</strong>
+                  <em>{t('APK olarak indir; aynı hesapla telefonda devam et.')}</em>
+                </span>
+                <ArrowRight size={16} aria-hidden="true" />
+              </a>
+            </div>
           )}
         </section>
 

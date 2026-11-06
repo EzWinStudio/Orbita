@@ -16,9 +16,20 @@ export function registerServiceWorker(): void {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
   if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
 
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {
-      /* offline support is optional; the app keeps working online */
-    });
+    navigator.serviceWorker
+      .register('./sw.js', { scope: './' })
+      .then((registration) => registration.update().catch(() => {}))
+      .catch(() => {
+        /* offline support is optional; the app keeps working online */
+      });
   });
 }

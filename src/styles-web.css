@@ -470,12 +470,18 @@
   border-color: rgba(var(--accent-rgb), 0.42);
 }
 
+.auth-downloads {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 372px);
+  margin-top: 26px;
+}
+
 .auth-desktop-cta {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: min(100%, 372px);
-  margin-top: 26px;
+  width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--border-strong);
   border-radius: 14px;

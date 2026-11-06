@@ -21,6 +21,16 @@ const DEFAULT_FEED_URL =
 
 const CHANGELOG = [
   {
+    version: '2.6.7',
+    date: '2026-11-06',
+    title: 'Android indirme seçeneği ve önbellek yenilemesi',
+    summary: 'Giriş ekranından Android uygulaması indirilebilir; yeni sürümler önbellekte takılmadan yüklenir.',
+    items: [
+      'Giriş ekranına Android uygulama indirme bağlantısı eklendi.',
+      'Yeni servis çalışanı sürümü, açık sekmeleri otomatik olarak güncel pakete geçirir.',
+    ],
+  },
+  {
     version: '2.6.6',
     date: '2026-11-06',
     title: 'Giriş ekranı avatar düzeltmesi',
