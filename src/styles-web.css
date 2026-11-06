@@ -807,6 +807,7 @@
 }
 
 .auth-avatar,
+.auth-account-chip-avatar,
 .sidebar-account-avatar,
 .web-account-avatar,
 .profile-upload-avatar {
@@ -820,6 +821,7 @@
 }
 
 .auth-avatar img,
+.auth-account-chip-avatar img,
 .sidebar-account-avatar img,
 .web-account-avatar img,
 .profile-upload-avatar img {

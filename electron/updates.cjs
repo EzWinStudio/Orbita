@@ -21,6 +21,15 @@ const DEFAULT_FEED_URL =
 
 const CHANGELOG = [
   {
+    version: '2.6.6',
+    date: '2026-11-06',
+    title: 'Giriş ekranı avatar düzeltmesi',
+    summary: 'Yüklenen geniş profil görselleri hesap kartının üzerine binmiyor.',
+    items: [
+      'Hesap seçicideki avatar 30 px yuvarlak alana kırpılır ve görsel taşması engellenir.',
+    ],
+  },
+  {
     version: '2.6.5',
     date: '2026-11-06',
     title: 'Masaüstü ve Android için otomatik güncelleme',

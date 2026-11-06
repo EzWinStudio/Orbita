@@ -18,13 +18,13 @@ Web verileri tarayıcıda kalır. Cihazlar arasında ortak veri için Ayarlar > 
 
 | | |
 | --- | --- |
-| Dosya | `Orbita-Android-2.6.5.apk` |
+| Dosya | `Orbita-Android-2.6.6.apk` |
 | İşletim sistemi | Android 7.0 ve üzeri |
 | Paket | `com.ezwin.orbita` |
 | Boyut | yaklaşık 5 MB |
 | İmza | Orbita sürüm anahtarıyla imzalı APK |
 
-APK'yı [GitHub Releases](https://github.com/EzWinStudio/Orbita/releases/tag/v2.6.5) sayfasından indir. Telefonda dosyayı aç; Android izin isterse tarayıcı veya dosya yöneticisi için **bilinmeyen uygulamaları yükle** seçeneğini aç ve kurulumu tamamla. Uygulama mağaza dışından, imzalı APK olarak dağıtılır.
+APK'yı [GitHub Releases](https://github.com/EzWinStudio/Orbita/releases/tag/v2.6.6) sayfasından indir. Telefonda dosyayı aç; Android izin isterse tarayıcı veya dosya yöneticisi için **bilinmeyen uygulamaları yükle** seçeneğini aç ve kurulumu tamamla. Uygulama mağaza dışından, imzalı APK olarak dağıtılır.
 
 Orbita hesabınla giriş yap. Hesap ve çalışma alanı cihazda tutulur; Android oturumu uygulamaya özel saklanır. Eşitleme açıksa şifreli paket sunucudan alınır ve şirketler, görevler, finans ve iletişim kayıtları telefon, web ve masaüstünde aynı kalır. Eşitleme kapalıysa telefon kendi yerel çalışma alanını kullanır.
 
@@ -46,7 +46,7 @@ npm run android:release # web paketi + imzalı release APK
 
 | | |
 | --- | --- |
-| Dosya | `Orbita-Setup-2.6.5.exe` |
+| Dosya | `Orbita-Setup-2.6.6.exe` |
 | İşletim sistemi | Windows 10 / 11, 64 bit |
 | Çalışma zamanı | Gömülü Chromium (Electron) — harici WebView2 gerekmez |
 | Disk alanı | yaklaşık 360 MB |
